@@ -10,19 +10,25 @@ Internal skill / CLI name: `project-knowledge`
 
 ## Invocation Modes
 
-Canonical form from the repository root:
+Preferred day-to-day form:
+
+```bash
+project-knowledge --help
+```
+
+If the command is not in `PATH`, use the repo-local form:
 
 ```bash
 node bin/project-knowledge --help
 ```
 
-Cross-platform fallback from the repository root:
+Cross-platform repo-local fallback:
 
 ```bash
 npm run cli -- --help
 ```
 
-Optional convenience shim:
+Optional convenience shim setup:
 
 ```bash
 npm link

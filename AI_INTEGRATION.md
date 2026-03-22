@@ -20,30 +20,30 @@ This document is for AI tools and agents that need to use `project-knowledge`.
 
 Resolve the repository root first. Treat the checked-out repo as `<repo-root>`.
 
-Preferred invocation options:
-
-```bash
-node bin/project-knowledge
-```
-
-Fallback from the repo root:
-
-```bash
-npm run cli -- <command>
-```
-
-Optional convenience shim:
+Preferred invocation option:
 
 ```bash
 project-knowledge
 ```
 
-Do not assume `npm link` always exposes a stable global command on Windows. Prefer `node bin/project-knowledge ...` when the repo is available locally.
+If the command is not available in `PATH`, fall back from the repo root:
+
+```bash
+node bin/project-knowledge <command>
+```
+
+Cross-platform repo-local fallback:
+
+```bash
+npm run cli -- <command>
+```
+
+Do not assume `npm link` always exposes a stable global command on Windows. Use `node bin/project-knowledge ...` or `npm run cli -- ...` when needed.
 
 Current limitation:
 
 - do not assume a generic repo-root skill installer can install this repository correctly via `--path .`
-- prefer cloning the repo locally, then running `node bin/project-knowledge ...`
+- prefer cloning the repo locally, then running `project-knowledge ...`
 
 Default config file:
 
@@ -74,13 +74,13 @@ When working on a project:
 ### List projects
 
 ```bash
-node bin/project-knowledge list-projects
+project-knowledge list-projects
 ```
 
 ### Search project knowledge
 
 ```bash
-node bin/project-knowledge search \
+project-knowledge search \
   --project openclaw-dashboard \
   --query "skill manager"
 ```
@@ -88,7 +88,7 @@ node bin/project-knowledge search \
 ### Build a context pack
 
 ```bash
-node bin/project-knowledge context-pack \
+project-knowledge context-pack \
   --project openclaw-dashboard \
   --query "skill manager"
 ```
@@ -96,32 +96,32 @@ node bin/project-knowledge context-pack \
 ### Lint a project
 
 ```bash
-node bin/project-knowledge lint \
+project-knowledge lint \
   --project openclaw-dashboard
 ```
 
 ### Rebuild index
 
 ```bash
-node bin/project-knowledge index
+project-knowledge index
 ```
 
 ### Inspect current config
 
 ```bash
-node bin/project-knowledge config get
+project-knowledge config get
 ```
 
 ### Update one config key
 
 ```bash
-node bin/project-knowledge config set lancedbUri /path/to/local/project-knowledge/lancedb
+project-knowledge config set lancedbUri /path/to/local/project-knowledge/lancedb
 ```
 
 ### Create a note
 
 ```bash
-node bin/project-knowledge write \
+project-knowledge write \
   --project openclaw-dashboard \
   --doc-type decision \
   --title "Repo First Sync"
