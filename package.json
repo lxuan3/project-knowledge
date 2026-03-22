@@ -6,6 +6,9 @@
   "bin": {
     "project-knowledge": "./bin/project-knowledge"
   },
+  "dependencies": {
+    "@lancedb/lancedb": "^0.21.3"
+  },
   "scripts": {
     "test": "node --test test/*.test.mjs"
   }

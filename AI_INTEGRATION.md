@@ -40,6 +40,11 @@ Default config file:
 
 The `vaultRoot` in that config should point to the default Obsidian vault root, not to a single project subfolder.
 
+Retrieval config in the same file:
+
+- `retrievalBackend`: `auto`, `json`, or `lancedb`
+- `lancedbUri`: local LanceDB storage path
+
 ## Expected behavior
 
 When working on a project:
@@ -49,6 +54,7 @@ When working on a project:
 3. Prefer `project-knowledge write` for formal notes
 4. Prefer `project-knowledge lint` after restructuring or bulk edits
 5. Prefer `project-knowledge index` after note creation, moves, or renames
+6. If `retrievalBackend` is `auto`, expect the tool to prefer LanceDB and fall back to JSON automatically
 
 ## Supported commands
 
@@ -144,6 +150,7 @@ Run index after:
 - deleting notes
 - renaming notes
 - changing folder structure
+- enabling LanceDB for the first time
 
 ## Do not
 

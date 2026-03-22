@@ -3,6 +3,7 @@ import path from "node:path";
 
 import { discoverProjectDocuments } from "../vault/discover.mjs";
 import { chunkMarkdownDocument } from "../vault/chunk.mjs";
+import { writeLanceChunks } from "./lancedb.mjs";
 import { writeChunks } from "./store.mjs";
 
 async function listProjectRoots(vaultRoot) {
@@ -12,7 +13,13 @@ async function listProjectRoots(vaultRoot) {
     .map((entry) => path.join(vaultRoot, entry.name));
 }
 
-export async function buildIndexes({ vaultRoot, indexRoot }) {
+export async function buildIndexes({
+  vaultRoot,
+  indexRoot,
+  retrievalBackend = "auto",
+  lancedbUri = null,
+  lancedbModule = null
+}) {
   const projectRoots = await listProjectRoots(vaultRoot);
   const globalChunks = [];
 
@@ -25,4 +32,18 @@ export async function buildIndexes({ vaultRoot, indexRoot }) {
   }
 
   await writeChunks(path.join(indexRoot, "global", "chunks.json"), globalChunks);
+
+  if ((retrievalBackend === "auto" || retrievalBackend === "lancedb") && lancedbUri) {
+    try {
+      await writeLanceChunks({
+        lancedbUri,
+        chunks: globalChunks,
+        lancedbModule
+      });
+    } catch (error) {
+      if (retrievalBackend === "lancedb") {
+        throw error;
+      }
+    }
+  }
 }

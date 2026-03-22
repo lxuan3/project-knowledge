@@ -1,7 +1,25 @@
 import { retrieveRankedChunks } from "../retrieval/adapter.mjs";
 
-export async function searchIndex({ indexRoot, query, project = null, scope = "project", limit = 5 }) {
-  const results = (await retrieveRankedChunks({ indexRoot, query, project, scope, limit }))
+export async function searchIndex({
+  indexRoot,
+  query,
+  project = null,
+  scope = "project",
+  limit = 5,
+  retrievalBackend = "auto",
+  lancedbUri = null,
+  lancedbModule = null
+}) {
+  const results = (await retrieveRankedChunks({
+    indexRoot,
+    query,
+    project,
+    scope,
+    limit,
+    retrievalBackend,
+    lancedbUri,
+    lancedbModule
+  }))
     .map((chunk) => ({
       score: chunk.score,
       project: chunk.project,

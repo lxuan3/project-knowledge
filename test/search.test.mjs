@@ -14,6 +14,46 @@ async function writeFile(filePath, content) {
   await fs.writeFile(filePath, content, "utf8");
 }
 
+function createFakeLanceDbModule({ rows = null, failConnect = false } = {}) {
+  const state = {
+    tables: new Map()
+  };
+
+  return {
+    state,
+    async connect(uri) {
+      if (failConnect) throw new Error("connect failed");
+
+      return {
+        async createTable(name, records, options = {}) {
+          const normalized = records.map((record) => ({ ...record }));
+          if (options.mode === "overwrite" || !state.tables.has(name)) {
+            state.tables.set(name, normalized);
+          } else {
+            state.tables.get(name).push(...normalized);
+          }
+
+          return {
+            async countRows() {
+              return state.tables.get(name)?.length ?? 0;
+            }
+          };
+        },
+        async openTable(name) {
+          const data = rows ?? state.tables.get(name);
+          if (!data) throw new Error(`missing table: ${name}`);
+
+          return {
+            async toArray() {
+              return data.map((row) => ({ ...row }));
+            }
+          };
+        }
+      };
+    }
+  };
+}
+
 test("buildIndexes writes project/global indexes and searchIndex returns structured results", async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "project-knowledge-search-"));
   const vaultRoot = path.join(root, "vault");
@@ -235,4 +275,95 @@ test("retrieval adapter returns ranked chunks and grouped context independently 
   });
   assert.equal(groups.overview.length, 1);
   assert.equal(groups.decisions.length, 1);
+});
+
+test("buildIndexes writes LanceDB rows and retrieval prefers LanceDB when available", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "project-knowledge-lancedb-"));
+  const vaultRoot = path.join(root, "vault");
+  const indexRoot = path.join(root, "index");
+  const lancedbUri = path.join(root, "lancedb");
+  const projectRoot = path.join(vaultRoot, "openclaw-dashboard");
+  const fakeLanceDb = createFakeLanceDbModule();
+
+  await writeFile(
+    path.join(projectRoot, "02-decisions", "repo-sync.md"),
+    [
+      "---",
+      "project: openclaw-dashboard",
+      "doc_type: decision",
+      "status: active",
+      "updated_at: 2026-03-22",
+      "aliases: [skill manager]",
+      "---",
+      "",
+      "# Repo Sync",
+      "",
+      "## Decision",
+      "",
+      "Use repo-first sync for skill manager."
+    ].join("\n")
+  );
+
+  await buildIndexes({
+    vaultRoot,
+    indexRoot,
+    retrievalBackend: "lancedb",
+    lancedbUri,
+    lancedbModule: fakeLanceDb
+  });
+
+  assert.equal(fakeLanceDb.state.tables.get("chunks")?.length, 1);
+  assert.equal(typeof fakeLanceDb.state.tables.get("chunks")?.[0]?.aliases, "string");
+
+  const ranked = await retrieveRankedChunks({
+    indexRoot,
+    project: "openclaw-dashboard",
+    query: "skill manager",
+    retrievalBackend: "lancedb",
+    lancedbUri,
+    lancedbModule: fakeLanceDb
+  });
+
+  assert.equal(ranked.length, 1);
+  assert.equal(ranked[0].doc_type, "decision");
+});
+
+test("retrieval falls back to JSON when LanceDB is unavailable", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "project-knowledge-lancedb-fallback-"));
+  const vaultRoot = path.join(root, "vault");
+  const indexRoot = path.join(root, "index");
+  const projectRoot = path.join(vaultRoot, "openclaw-dashboard");
+
+  await writeFile(
+    path.join(projectRoot, "02-decisions", "repo-sync.md"),
+    [
+      "---",
+      "project: openclaw-dashboard",
+      "doc_type: decision",
+      "status: active",
+      "updated_at: 2026-03-22",
+      "aliases: [skill manager]",
+      "---",
+      "",
+      "# Repo Sync",
+      "",
+      "## Decision",
+      "",
+      "Use repo-first sync for skill manager."
+    ].join("\n")
+  );
+
+  await buildIndexes({ vaultRoot, indexRoot });
+
+  const ranked = await retrieveRankedChunks({
+    indexRoot,
+    project: "openclaw-dashboard",
+    query: "skill manager",
+    retrievalBackend: "auto",
+    lancedbUri: path.join(root, "missing-lancedb"),
+    lancedbModule: createFakeLanceDbModule({ failConnect: true })
+  });
+
+  assert.equal(ranked.length, 1);
+  assert.equal(ranked[0].doc_type, "decision");
 });

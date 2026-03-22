@@ -12,6 +12,8 @@ test("loadConfig returns default Obsidian and local index roots when config file
 
   assert.equal(config.vaultRoot, path.join(homeDir, "obsidian", "Openclaw"));
   assert.equal(config.indexRoot, path.join(homeDir, ".project-knowledge", "index"));
+  assert.equal(config.retrievalBackend, "auto");
+  assert.equal(config.lancedbUri, path.join(homeDir, ".project-knowledge", "lancedb"));
 });
 
 test("loadConfig merges values from ~/.project-knowledge/config.json", async () => {
@@ -22,7 +24,9 @@ test("loadConfig merges values from ~/.project-knowledge/config.json", async () 
     path.join(configDir, "config.json"),
     JSON.stringify({
       vaultRoot: "/tmp/custom-vault",
-      indexRoot: "/tmp/custom-index"
+      indexRoot: "/tmp/custom-index",
+      retrievalBackend: "lancedb",
+      lancedbUri: "/tmp/custom-lancedb"
     }),
     "utf8"
   );
@@ -30,6 +34,8 @@ test("loadConfig merges values from ~/.project-knowledge/config.json", async () 
   const config = await loadConfig({ homeDir });
   assert.equal(config.vaultRoot, "/tmp/custom-vault");
   assert.equal(config.indexRoot, "/tmp/custom-index");
+  assert.equal(config.retrievalBackend, "lancedb");
+  assert.equal(config.lancedbUri, "/tmp/custom-lancedb");
 });
 
 test("resolveProjectRoot uses explicit path or derives it from project name", async () => {

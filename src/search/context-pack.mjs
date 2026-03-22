@@ -13,8 +13,22 @@ function simplifyChunk(chunk, includeScore = false) {
   };
 }
 
-export async function buildContextPack({ indexRoot, project, query = null }) {
-  const groups = await retrieveContextGroups({ indexRoot, project, query });
+export async function buildContextPack({
+  indexRoot,
+  project,
+  query = null,
+  retrievalBackend = "auto",
+  lancedbUri = null,
+  lancedbModule = null
+}) {
+  const groups = await retrieveContextGroups({
+    indexRoot,
+    project,
+    query,
+    retrievalBackend,
+    lancedbUri,
+    lancedbModule
+  });
 
   return {
     project,

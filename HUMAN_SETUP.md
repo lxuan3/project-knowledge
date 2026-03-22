@@ -23,7 +23,9 @@ Example:
 ```json
 {
   "vaultRoot": "/path/to/your/default/obsidian/vault",
-  "indexRoot": "/path/to/local/project-knowledge/index"
+  "indexRoot": "/path/to/local/project-knowledge/index",
+  "retrievalBackend": "auto",
+  "lancedbUri": "/path/to/local/project-knowledge/lancedb"
 }
 ```
 
@@ -71,6 +73,12 @@ Rebuild index:
 project-knowledge index
 ```
 
+Backend behavior:
+
+- `retrievalBackend: "auto"`: prefer LanceDB, fall back to JSON
+- `retrievalBackend: "json"`: use only the original JSON backend
+- `retrievalBackend: "lancedb"`: require LanceDB
+
 Search:
 
 ```bash
@@ -104,6 +112,8 @@ Then rebuild index if note structure or parsing changed:
 ```bash
 project-knowledge index
 ```
+
+If you enable LanceDB, rebuild once so both JSON and LanceDB stay in sync.
 
 ## What not to do
 

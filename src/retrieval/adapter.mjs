@@ -1,5 +1,6 @@
 import path from "node:path";
 
+import { readLanceChunks } from "../index/lancedb.mjs";
 import { readChunks } from "../index/store.mjs";
 
 export function tokenizeQuery(query) {
@@ -30,7 +31,7 @@ function sortRanked(left, right) {
   return String(right.updated_at ?? "").localeCompare(String(left.updated_at ?? ""));
 }
 
-export async function loadChunks({ indexRoot, project = null, scope = "project" }) {
+async function loadJsonChunks({ indexRoot, project = null, scope = "project" }) {
   const indexPath = scope === "global"
     ? path.join(indexRoot, "global", "chunks.json")
     : path.join(indexRoot, "projects", project, "chunks.json");
@@ -38,8 +39,51 @@ export async function loadChunks({ indexRoot, project = null, scope = "project" 
   return readChunks(indexPath);
 }
 
-export async function retrieveRankedChunks({ indexRoot, query, project = null, scope = "project", limit = 5 }) {
-  const chunks = await loadChunks({ indexRoot, project, scope });
+function filterChunksForScope(chunks, { project = null, scope = "project" }) {
+  if (scope === "global") return chunks;
+  return chunks.filter((chunk) => chunk.project === project);
+}
+
+export async function loadChunks({
+  indexRoot,
+  project = null,
+  scope = "project",
+  retrievalBackend = "auto",
+  lancedbUri = null,
+  lancedbModule = null
+}) {
+  const shouldTryLanceDb = (retrievalBackend === "auto" || retrievalBackend === "lancedb") && lancedbUri;
+
+  if (shouldTryLanceDb) {
+    try {
+      const chunks = await readLanceChunks({ lancedbUri, lancedbModule });
+      return filterChunksForScope(chunks, { project, scope });
+    } catch (error) {
+      if (retrievalBackend === "lancedb") throw error;
+    }
+  }
+
+  return loadJsonChunks({ indexRoot, project, scope });
+}
+
+export async function retrieveRankedChunks({
+  indexRoot,
+  query,
+  project = null,
+  scope = "project",
+  limit = 5,
+  retrievalBackend = "auto",
+  lancedbUri = null,
+  lancedbModule = null
+}) {
+  const chunks = await loadChunks({
+    indexRoot,
+    project,
+    scope,
+    retrievalBackend,
+    lancedbUri,
+    lancedbModule
+  });
   const terms = tokenizeQuery(query);
 
   return chunks
@@ -52,8 +96,22 @@ export async function retrieveRankedChunks({ indexRoot, query, project = null, s
     .slice(0, limit);
 }
 
-export async function retrieveContextGroups({ indexRoot, project, query = null }) {
-  const chunks = await loadChunks({ indexRoot, project, scope: "project" });
+export async function retrieveContextGroups({
+  indexRoot,
+  project,
+  query = null,
+  retrievalBackend = "auto",
+  lancedbUri = null,
+  lancedbModule = null
+}) {
+  const chunks = await loadChunks({
+    indexRoot,
+    project,
+    scope: "project",
+    retrievalBackend,
+    lancedbUri,
+    lancedbModule
+  });
   const terms = tokenizeQuery(query);
 
   const firstByType = (docType) =>

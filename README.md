@@ -40,12 +40,29 @@ Example config:
 ```json
 {
   "vaultRoot": "/path/to/your/default/obsidian/vault",
-  "indexRoot": "/path/to/local/project-knowledge/index"
+  "indexRoot": "/path/to/local/project-knowledge/index",
+  "retrievalBackend": "auto",
+  "lancedbUri": "/path/to/local/project-knowledge/lancedb"
 }
 ```
 
 This means you can run commands directly against markdown files in your default Obsidian vault without passing
 `--vault-root` or `--index-root` every time.
+
+## Retrieval Backend
+
+The CLI now supports two local retrieval layers:
+
+- JSON index: the original fallback backend
+- LanceDB: the preferred backend when available
+
+Config values:
+
+- `retrievalBackend: "auto"`: prefer LanceDB, fall back to JSON
+- `retrievalBackend: "json"`: force the original JSON backend
+- `retrievalBackend: "lancedb"`: force LanceDB and fail if it is unavailable
+
+The `index` command continues to write JSON indexes. In `auto` or `lancedb` mode it also writes LanceDB rows.
 
 ## Current status
 

@@ -47,7 +47,9 @@ if (!commands.includes(arg)) {
 if (arg === "index") {
   const vaultRoot = readFlag("--vault-root") ?? config.vaultRoot;
   const indexRoot = readFlag("--index-root") ?? config.indexRoot;
-  await buildIndexes({ vaultRoot, indexRoot });
+  const retrievalBackend = readFlag("--retrieval-backend") ?? config.retrievalBackend;
+  const lancedbUri = readFlag("--lancedb-uri") ?? config.lancedbUri;
+  await buildIndexes({ vaultRoot, indexRoot, retrievalBackend, lancedbUri });
   process.stdout.write(`Indexed vault: ${vaultRoot}\n`);
   process.exit(0);
 }
@@ -64,11 +66,13 @@ if (arg === "search") {
   const query = readFlag("--query");
   const project = readFlag("--project");
   const scope = readFlag("--scope") ?? (project ? "project" : "global");
+  const retrievalBackend = readFlag("--retrieval-backend") ?? config.retrievalBackend;
+  const lancedbUri = readFlag("--lancedb-uri") ?? config.lancedbUri;
   if (!indexRoot || !query) {
     process.stderr.write("search requires --index-root and --query\n");
     process.exit(1);
   }
-  const result = await searchIndex({ indexRoot, query, project, scope });
+  const result = await searchIndex({ indexRoot, query, project, scope, retrievalBackend, lancedbUri });
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
   process.exit(0);
 }
@@ -77,11 +81,13 @@ if (arg === "context-pack") {
   const indexRoot = readFlag("--index-root") ?? config.indexRoot;
   const project = readFlag("--project");
   const query = readFlag("--query");
+  const retrievalBackend = readFlag("--retrieval-backend") ?? config.retrievalBackend;
+  const lancedbUri = readFlag("--lancedb-uri") ?? config.lancedbUri;
   if (!project) {
     process.stderr.write("context-pack requires --project\n");
     process.exit(1);
   }
-  const result = await buildContextPack({ indexRoot, project, query });
+  const result = await buildContextPack({ indexRoot, project, query, retrievalBackend, lancedbUri });
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
   process.exit(0);
 }
