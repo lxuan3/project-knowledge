@@ -32,18 +32,22 @@ Use this skill when:
 
 - working on an existing project and prior decisions may matter
 - an agent needs structured project context before execution
+- the user explicitly wants to record something into project knowledge / 项目知识库
 - formal project knowledge should be written into the standard note layout
 - notes were moved, renamed, or reorganized and need validation
 - the retrieval cache may be stale after note changes
 
 Do not use this skill for:
 
+- meeting archive flows unless the user explicitly asks to write a distilled result into project knowledge
+- raw transcripts, raw minutes, or generic note archiving
 - temporary scratch reasoning that should stay outside the formal knowledge base
 - one-off freeform markdown when no project structure is required
 
 ## Core Rules
 
 - Search or build a context pack before assuming project history
+- Only enter the formal `project-knowledge` write flow when the user explicitly asks to record something into project knowledge / 项目知识库
 - Use `write` for formal knowledge instead of hand-writing random markdown files
 - Treat Obsidian markdown as canonical; never treat the local index as canonical memory
 - Run `lint` after restructuring, bulk edits, or project knowledge cleanup
@@ -110,6 +114,14 @@ project-knowledge write \
 ```
 
 The CLI creates the file with standard frontmatter and a template body. Edit the generated file to add actual content.
+
+Before calling `write`, the agent should explicitly state:
+
+- chosen `project-type`
+- chosen `doc-type`
+- one-sentence reason for that classification
+
+This is not a hard approval gate. The default is to continue. But the classification must be visible to the human so they can correct it before or after the note is created if needed.
 
 For non-engineering projects, supported doc types also include:
 
