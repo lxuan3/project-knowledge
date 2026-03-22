@@ -8,7 +8,9 @@ function defaultConfig(homeDir) {
     indexRoot: path.join(homeDir, ".project-knowledge", "index"),
     retrievalBackend: "auto",
     lancedbUri: path.join(homeDir, ".project-knowledge", "lancedb"),
-    remoteBaseUrl: null
+    remoteBaseUrl: null,
+    remotePrimaryUrl: null,
+    remoteBackupUrl: null
   };
 }
 

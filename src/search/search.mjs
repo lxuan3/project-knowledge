@@ -1,5 +1,5 @@
 import { retrieveRankedChunks } from "../retrieval/adapter.mjs";
-import { searchRemoteIndex } from "./remote.mjs";
+import { searchRemoteIndex, tryRemoteOperation } from "./remote.mjs";
 
 export async function searchIndex({
   indexRoot,
@@ -10,10 +10,19 @@ export async function searchIndex({
   retrievalBackend = "auto",
   lancedbUri = null,
   remoteBaseUrl = null,
+  remotePrimaryUrl = null,
+  remoteBackupUrl = null,
   lancedbModule = null
 }) {
-  if (remoteBaseUrl) {
-    return searchRemoteIndex({ remoteBaseUrl, query, project, scope });
+  const remoteAttempt = await tryRemoteOperation({
+    remotePrimaryUrl,
+    remoteBackupUrl,
+    remoteBaseUrl,
+    operation: (url) => searchRemoteIndex({ remoteBaseUrl: url, query, project, scope })
+  });
+
+  if (remoteAttempt.ok) {
+    return remoteAttempt.result;
   }
 
   const retrieval = await retrieveRankedChunks({
@@ -43,6 +52,7 @@ export async function searchIndex({
     query,
     project,
     retrieval_backend: retrieval.backend,
+    transport_backend: "local",
     results
   };
 }

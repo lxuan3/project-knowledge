@@ -58,11 +58,14 @@ Retrieval config in the same file:
 - `retrievalBackend`: `auto`, `json`, or `lancedb`
 - `lancedbUri`: local LanceDB storage path
 - `remoteBaseUrl`: optional remote `project-knowledge serve` base URL
+- `remotePrimaryUrl`: preferred remote service URL
+- `remoteBackupUrl`: backup remote service URL
 
 Important distinction:
 
 - `lancedbUri` is always a local filesystem path
 - `remoteBaseUrl` is the network address to another machine's HTTP query service
+- `remotePrimaryUrl` and `remoteBackupUrl` are also network addresses
 
 ## Expected behavior
 
@@ -126,6 +129,11 @@ project-knowledge config set lancedbUri /path/to/local/project-knowledge/lancedb
 
 ```bash
 project-knowledge config set remoteBaseUrl http://192.168.0.148:7357
+```
+
+```bash
+project-knowledge config set remotePrimaryUrl http://192.168.0.148:7357
+project-knowledge config set remoteBackupUrl http://100.112.159.108:7357
 ```
 
 ### Create a note

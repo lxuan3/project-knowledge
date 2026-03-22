@@ -30,3 +30,35 @@ export async function buildRemoteContextPack({ remoteBaseUrl, project, query = n
   if (query) url.searchParams.set("query", query);
   return fetchJson(url);
 }
+
+export async function tryRemoteOperation({ remotePrimaryUrl = null, remoteBackupUrl = null, remoteBaseUrl = null, operation }) {
+  const primary = remotePrimaryUrl ?? remoteBaseUrl ?? null;
+  const backup = remoteBackupUrl ?? null;
+  const attempts = [
+    primary ? { url: primary, transportBackend: "remote-primary" } : null,
+    backup ? { url: backup, transportBackend: "remote-backup" } : null
+  ].filter(Boolean);
+
+  let lastError = null;
+  for (const attempt of attempts) {
+    try {
+      const result = await operation(attempt.url);
+      return {
+        ok: true,
+        result: {
+          ...result,
+          transport_backend: attempt.transportBackend
+        },
+        error: null
+      };
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  return {
+    ok: false,
+    result: null,
+    error: lastError
+  };
+}

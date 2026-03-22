@@ -15,6 +15,8 @@ test("loadConfig returns default Obsidian and local index roots when config file
   assert.equal(config.retrievalBackend, "auto");
   assert.equal(config.lancedbUri, path.join(homeDir, ".project-knowledge", "lancedb"));
   assert.equal(config.remoteBaseUrl, null);
+  assert.equal(config.remotePrimaryUrl, null);
+  assert.equal(config.remoteBackupUrl, null);
 });
 
 test("loadConfig merges values from ~/.project-knowledge/config.json", async () => {
@@ -28,7 +30,9 @@ test("loadConfig merges values from ~/.project-knowledge/config.json", async () 
       indexRoot: "/tmp/custom-index",
       retrievalBackend: "lancedb",
       lancedbUri: "/tmp/custom-lancedb",
-      remoteBaseUrl: "http://192.168.0.148:7357"
+      remoteBaseUrl: "http://192.168.0.148:7357",
+      remotePrimaryUrl: "http://192.168.0.148:7357",
+      remoteBackupUrl: "http://100.112.159.108:7357"
     }),
     "utf8"
   );
@@ -39,6 +43,8 @@ test("loadConfig merges values from ~/.project-knowledge/config.json", async () 
   assert.equal(config.retrievalBackend, "lancedb");
   assert.equal(config.lancedbUri, "/tmp/custom-lancedb");
   assert.equal(config.remoteBaseUrl, "http://192.168.0.148:7357");
+  assert.equal(config.remotePrimaryUrl, "http://192.168.0.148:7357");
+  assert.equal(config.remoteBackupUrl, "http://100.112.159.108:7357");
 });
 
 test("resolveProjectRoot uses explicit path or derives it from project name", async () => {

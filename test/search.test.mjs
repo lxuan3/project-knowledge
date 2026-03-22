@@ -481,6 +481,7 @@ test("searchIndex and buildContextPack can proxy to a remote project-knowledge s
       remoteBaseUrl
     });
     assert.equal(search.retrieval_backend, "json");
+    assert.equal(search.transport_backend, "remote-primary");
     assert.equal(search.results.length, 1);
 
     const contextPack = await buildContextPack({
@@ -490,8 +491,126 @@ test("searchIndex and buildContextPack can proxy to a remote project-knowledge s
       remoteBaseUrl
     });
     assert.equal(contextPack.retrieval_backend, "json");
+    assert.equal(contextPack.transport_backend, "remote-primary");
     assert.equal(contextPack.context.decisions.length, 1);
   } finally {
     await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
   }
+});
+
+test("remote search can fall back from primary to backup before using local indexes", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "project-knowledge-remote-backup-"));
+  const vaultRoot = path.join(root, "vault");
+  const indexRoot = path.join(root, "index");
+  const projectRoot = path.join(vaultRoot, "openclaw-dashboard");
+
+  await writeFile(
+    path.join(projectRoot, "02-decisions", "repo-sync.md"),
+    [
+      "---",
+      "project: openclaw-dashboard",
+      "doc_type: decision",
+      "status: active",
+      "updated_at: 2026-03-22",
+      "aliases: [skill manager]",
+      "---",
+      "",
+      "# Repo Sync",
+      "",
+      "## Decision",
+      "",
+      "Use repo-first sync for skill manager."
+    ].join("\n")
+  );
+
+  await buildIndexes({ vaultRoot, indexRoot });
+
+  const server = createProjectKnowledgeServer({
+    config: {
+      vaultRoot,
+      indexRoot,
+      retrievalBackend: "json",
+      lancedbUri: path.join(root, "lancedb"),
+      remoteBaseUrl: null
+    }
+  });
+
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+
+  try {
+    const address = server.address();
+    const remoteBackupUrl = `http://127.0.0.1:${address.port}`;
+
+    const search = await searchIndex({
+      indexRoot,
+      query: "skill manager",
+      project: "openclaw-dashboard",
+      remotePrimaryUrl: "http://127.0.0.1:9",
+      remoteBackupUrl
+    });
+    assert.equal(search.transport_backend, "remote-backup");
+    assert.equal(search.results.length, 1);
+
+    const contextPack = await buildContextPack({
+      indexRoot,
+      project: "openclaw-dashboard",
+      query: "skill manager",
+      remotePrimaryUrl: "http://127.0.0.1:9",
+      remoteBackupUrl
+    });
+    assert.equal(contextPack.transport_backend, "remote-backup");
+    assert.equal(contextPack.context.decisions.length, 1);
+  } finally {
+    await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+  }
+});
+
+test("remote search can fall back to local retrieval after both remote URLs fail", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "project-knowledge-remote-local-fallback-"));
+  const vaultRoot = path.join(root, "vault");
+  const indexRoot = path.join(root, "index");
+  const projectRoot = path.join(vaultRoot, "openclaw-dashboard");
+
+  await writeFile(
+    path.join(projectRoot, "02-decisions", "repo-sync.md"),
+    [
+      "---",
+      "project: openclaw-dashboard",
+      "doc_type: decision",
+      "status: active",
+      "updated_at: 2026-03-22",
+      "aliases: [skill manager]",
+      "---",
+      "",
+      "# Repo Sync",
+      "",
+      "## Decision",
+      "",
+      "Use repo-first sync for skill manager."
+    ].join("\n")
+  );
+
+  await buildIndexes({ vaultRoot, indexRoot });
+
+  const search = await searchIndex({
+    indexRoot,
+    query: "skill manager",
+    project: "openclaw-dashboard",
+    remotePrimaryUrl: "http://127.0.0.1:9",
+    remoteBackupUrl: "http://127.0.0.1:8"
+  });
+  assert.equal(search.retrieval_backend, "json");
+  assert.equal(search.transport_backend, "local");
+  assert.equal(search.results.length, 1);
+
+  const contextPack = await buildContextPack({
+    indexRoot,
+    project: "openclaw-dashboard",
+    query: "skill manager",
+    remotePrimaryUrl: "http://127.0.0.1:9",
+    remoteBackupUrl: "http://127.0.0.1:8"
+  });
+  assert.equal(contextPack.retrieval_backend, "json");
+  assert.equal(contextPack.transport_backend, "local");
+  assert.equal(contextPack.context.decisions.length, 1);
 });

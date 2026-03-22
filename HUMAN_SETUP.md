@@ -26,7 +26,9 @@ Example:
   "indexRoot": "/path/to/local/project-knowledge/index",
   "retrievalBackend": "auto",
   "lancedbUri": "/path/to/local/project-knowledge/lancedb",
-  "remoteBaseUrl": null
+  "remoteBaseUrl": null,
+  "remotePrimaryUrl": null,
+  "remoteBackupUrl": null
 }
 ```
 
@@ -93,6 +95,15 @@ Backend behavior:
 - `retrievalBackend: "json"`: use only the original JSON backend
 - `retrievalBackend: "lancedb"`: require LanceDB
 - `remoteBaseUrl`: if set, `search` and `context-pack` use the remote HTTP service instead of local indexes
+- `remotePrimaryUrl`: preferred remote service URL
+- `remoteBackupUrl`: backup remote service URL
+
+Remote priority:
+
+1. `remotePrimaryUrl`
+2. `remoteBackupUrl`
+3. `remoteBaseUrl`
+4. local fallback
 
 Search:
 
@@ -122,6 +133,11 @@ Set a remote query server:
 
 ```bash
 project-knowledge config set remoteBaseUrl http://192.168.0.148:7357
+```
+
+```bash
+project-knowledge config set remotePrimaryUrl http://192.168.0.148:7357
+project-knowledge config set remoteBackupUrl http://100.112.159.108:7357
 ```
 
 On a secondary machine that only queries another computer's service, `remoteBaseUrl` is the key setting. That machine does not need its own LanceDB install.

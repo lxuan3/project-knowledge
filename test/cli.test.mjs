@@ -45,7 +45,9 @@ test("config get prints effective config and config set updates allowed keys", a
       indexRoot: "/tmp/index",
       retrievalBackend: "auto",
       lancedbUri: "/tmp/lancedb",
-      remoteBaseUrl: null
+      remoteBaseUrl: null,
+      remotePrimaryUrl: null,
+      remoteBackupUrl: null
     }),
     "utf8"
   );
@@ -71,6 +73,14 @@ test("config get prints effective config and config set updates allowed keys", a
     cwd: repoRoot,
     env
   });
+  await execFileAsync("node", [cliEntry, "config", "set", "remotePrimaryUrl", "http://192.168.0.148:7357"], {
+    cwd: repoRoot,
+    env
+  });
+  await execFileAsync("node", [cliEntry, "config", "set", "remoteBackupUrl", "http://100.112.159.108:7357"], {
+    cwd: repoRoot,
+    env
+  });
 
   const { stdout: after } = await execFileAsync("node", [cliEntry, "config", "get"], {
     cwd: repoRoot,
@@ -79,6 +89,8 @@ test("config get prints effective config and config set updates allowed keys", a
   const parsedAfter = JSON.parse(after);
   assert.equal(parsedAfter.lancedbUri, "/tmp/lancedb-next");
   assert.equal(parsedAfter.remoteBaseUrl, "http://192.168.0.148:7357");
+  assert.equal(parsedAfter.remotePrimaryUrl, "http://192.168.0.148:7357");
+  assert.equal(parsedAfter.remoteBackupUrl, "http://100.112.159.108:7357");
 });
 
 test("search prints a friendly message when indexes have not been built yet", async () => {

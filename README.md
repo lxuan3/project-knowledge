@@ -64,7 +64,9 @@ Example config:
   "indexRoot": "/path/to/local/project-knowledge/index",
   "retrievalBackend": "auto",
   "lancedbUri": "/path/to/local/project-knowledge/lancedb",
-  "remoteBaseUrl": null
+  "remoteBaseUrl": null,
+  "remotePrimaryUrl": null,
+  "remoteBackupUrl": null
 }
 ```
 
@@ -84,10 +86,19 @@ Config values:
 - `retrievalBackend: "json"`: force the original JSON backend
 - `retrievalBackend: "lancedb"`: force LanceDB and fail if it is unavailable
 - `remoteBaseUrl`: optional remote `project-knowledge serve` base URL, for example `http://192.168.0.148:7357`
+- `remotePrimaryUrl`: optional preferred remote URL
+- `remoteBackupUrl`: optional backup remote URL
 
 The `index` command continues to write JSON indexes. In `auto` or `lancedb` mode it also writes LanceDB rows.
 
-If `remoteBaseUrl` is set, `search` and `context-pack` proxy to the remote HTTP service instead of reading local indexes.
+Remote priority:
+
+1. `remotePrimaryUrl`
+2. `remoteBackupUrl`
+3. `remoteBaseUrl` (legacy single-address compatibility)
+4. local retrieval fallback
+
+If both remote addresses fail, `search` and `context-pack` fall back to local retrieval.
 
 ## Config Commands
 
@@ -107,6 +118,11 @@ project-knowledge config set lancedbUri /path/to/local/project-knowledge/lancedb
 project-knowledge config set remoteBaseUrl http://192.168.0.148:7357
 ```
 
+```bash
+project-knowledge config set remotePrimaryUrl http://192.168.0.148:7357
+project-knowledge config set remoteBackupUrl http://100.112.159.108:7357
+```
+
 Allowed keys:
 
 - `vaultRoot`
@@ -114,6 +130,8 @@ Allowed keys:
 - `retrievalBackend`
 - `lancedbUri`
 - `remoteBaseUrl`
+- `remotePrimaryUrl`
+- `remoteBackupUrl`
 
 ## Reinstall behavior
 
