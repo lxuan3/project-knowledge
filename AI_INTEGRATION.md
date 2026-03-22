@@ -20,17 +20,30 @@ This document is for AI tools and agents that need to use `project-knowledge`.
 
 Resolve the repository root first. Treat the checked-out repo as `<repo-root>`.
 
-Invocation options:
+Preferred invocation options:
+
+```bash
+node bin/project-knowledge
+```
+
+Fallback from the repo root:
+
+```bash
+npm run cli -- <command>
+```
+
+Optional convenience shim:
 
 ```bash
 project-knowledge
 ```
 
-Or from the repo root:
+Do not assume `npm link` always exposes a stable global command on Windows. Prefer `node bin/project-knowledge ...` when the repo is available locally.
 
-```bash
-node bin/project-knowledge
-```
+Current limitation:
+
+- do not assume a generic repo-root skill installer can install this repository correctly via `--path .`
+- prefer cloning the repo locally, then running `node bin/project-knowledge ...`
 
 Default config file:
 

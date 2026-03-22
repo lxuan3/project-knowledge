@@ -10,18 +10,32 @@ Internal skill / CLI name: `project-knowledge`
 
 ## Invocation Modes
 
-From the repository root:
+Canonical form from the repository root:
 
 ```bash
 node bin/project-knowledge --help
 ```
 
-Or install a local global shim:
+Cross-platform fallback from the repository root:
+
+```bash
+npm run cli -- --help
+```
+
+Optional convenience shim:
 
 ```bash
 npm link
 project-knowledge --help
 ```
+
+On some Windows setups `npm link` does not reliably expose `project-knowledge.cmd`. If that happens, keep using `node bin/project-knowledge ...` or `npm run cli -- ...`.
+
+## Current install recommendation
+
+For Codex and similar tools, prefer `git clone` + repo-local invocation.
+
+Do not rely on a repo-root `skill-installer --path .` flow yet. Current installers that sparse-check out `.` may copy only top-level files and miss `bin/`, `src/`, and `templates/`.
 
 ## Commands
 

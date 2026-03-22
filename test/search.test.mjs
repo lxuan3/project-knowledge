@@ -216,6 +216,24 @@ test("buildContextPack returns grouped project context", async () => {
   assert.equal(contextPack.context.decisions[0].doc_type, "decision");
 });
 
+test("searchIndex throws a friendly error when indexes have not been built yet", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "project-knowledge-missing-index-"));
+  const indexRoot = path.join(root, "index");
+
+  await assert.rejects(
+    () => searchIndex({
+      indexRoot,
+      query: "skill manager",
+      project: "openclaw-dashboard"
+    }),
+    (error) => {
+      assert.match(error.message, /Run `project-knowledge index` first\./);
+      assert.match(error.message, /openclaw-dashboard/);
+      return true;
+    }
+  );
+});
+
 test("retrieval adapter returns ranked chunks and grouped context independently of search formatters", async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "project-knowledge-adapter-"));
   const vaultRoot = path.join(root, "vault");

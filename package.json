@@ -10,6 +10,7 @@
     "@lancedb/lancedb": "^0.21.3"
   },
   "scripts": {
+    "cli": "node bin/project-knowledge",
     "test": "node --test test/*.test.mjs"
   }
 }

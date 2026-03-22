@@ -53,24 +53,36 @@ npm link
 project-knowledge --help
 ```
 
+If your shell does not expose `project-knowledge` after `npm link`, use one of these instead:
+
+```bash
+cd <repo-root>
+node bin/project-knowledge --help
+```
+
+```bash
+cd <repo-root>
+npm run cli -- --help
+```
+
 ## Daily commands
 
 List projects:
 
 ```bash
-project-knowledge list-projects
+node bin/project-knowledge list-projects
 ```
 
 Lint a project:
 
 ```bash
-project-knowledge lint --project openclaw-dashboard
+node bin/project-knowledge lint --project openclaw-dashboard
 ```
 
 Rebuild index:
 
 ```bash
-project-knowledge index
+node bin/project-knowledge index
 ```
 
 Backend behavior:
@@ -82,31 +94,31 @@ Backend behavior:
 Search:
 
 ```bash
-project-knowledge search --project openclaw-dashboard --query "skill manager"
+node bin/project-knowledge search --project openclaw-dashboard --query "skill manager"
 ```
 
 Build a context pack:
 
 ```bash
-project-knowledge context-pack --project openclaw-dashboard --query "skill manager"
+node bin/project-knowledge context-pack --project openclaw-dashboard --query "skill manager"
 ```
 
 Inspect current config:
 
 ```bash
-project-knowledge config get
+node bin/project-knowledge config get
 ```
 
 Update LanceDB path:
 
 ```bash
-project-knowledge config set lancedbUri /path/to/local/project-knowledge/lancedb
+node bin/project-knowledge config set lancedbUri /path/to/local/project-knowledge/lancedb
 ```
 
 Write a note:
 
 ```bash
-project-knowledge write --project openclaw-dashboard --doc-type decision --title "Repo First Sync"
+node bin/project-knowledge write --project openclaw-dashboard --doc-type decision --title "Repo First Sync"
 ```
 
 ## Upgrade workflow
@@ -122,7 +134,7 @@ npm run test
 Then rebuild index if note structure or parsing changed:
 
 ```bash
-project-knowledge index
+node bin/project-knowledge index
 ```
 
 If you enable LanceDB, rebuild once so both JSON and LanceDB stay in sync.

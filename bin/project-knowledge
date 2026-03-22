@@ -25,150 +25,169 @@ const helpText = [
   ...commands.map((command) => `  ${command}`)
 ].join("\n");
 
-const arg = process.argv[2];
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const config = await loadConfig();
-
 function readFlag(flagName) {
   const index = process.argv.indexOf(flagName);
   if (index === -1) return null;
   return process.argv[index + 1] ?? null;
 }
 
-if (!arg || arg === "--help" || arg === "-h") {
-  process.stdout.write(`${helpText}\n`);
-  process.exit(0);
-}
+async function main() {
+  const arg = process.argv[2];
+  const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+  const config = await loadConfig();
 
-if (!commands.includes(arg)) {
-  process.stderr.write(`Unknown command: ${arg}\n`);
-  process.stderr.write(`${helpText}\n`);
-  process.exit(1);
-}
-
-if (arg === "index") {
-  const vaultRoot = readFlag("--vault-root") ?? config.vaultRoot;
-  const indexRoot = readFlag("--index-root") ?? config.indexRoot;
-  const retrievalBackend = readFlag("--retrieval-backend") ?? config.retrievalBackend;
-  const lancedbUri = readFlag("--lancedb-uri") ?? config.lancedbUri;
-  await buildIndexes({ vaultRoot, indexRoot, retrievalBackend, lancedbUri });
-  process.stdout.write(`Indexed vault: ${vaultRoot}\n`);
-  process.exit(0);
-}
-
-if (arg === "list-projects") {
-  const vaultRoot = readFlag("--vault-root") ?? config.vaultRoot;
-  const projects = await listProjects(vaultRoot);
-  process.stdout.write(`${JSON.stringify({ vaultRoot, projects }, null, 2)}\n`);
-  process.exit(0);
-}
-
-if (arg === "search") {
-  const indexRoot = readFlag("--index-root") ?? config.indexRoot;
-  const query = readFlag("--query");
-  const project = readFlag("--project");
-  const scope = readFlag("--scope") ?? (project ? "project" : "global");
-  const retrievalBackend = readFlag("--retrieval-backend") ?? config.retrievalBackend;
-  const lancedbUri = readFlag("--lancedb-uri") ?? config.lancedbUri;
-  if (!indexRoot || !query) {
-    process.stderr.write("search requires --index-root and --query\n");
-    process.exit(1);
-  }
-  const result = await searchIndex({ indexRoot, query, project, scope, retrievalBackend, lancedbUri });
-  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-  process.exit(0);
-}
-
-if (arg === "context-pack") {
-  const indexRoot = readFlag("--index-root") ?? config.indexRoot;
-  const project = readFlag("--project");
-  const query = readFlag("--query");
-  const retrievalBackend = readFlag("--retrieval-backend") ?? config.retrievalBackend;
-  const lancedbUri = readFlag("--lancedb-uri") ?? config.lancedbUri;
-  if (!project) {
-    process.stderr.write("context-pack requires --project\n");
-    process.exit(1);
-  }
-  const result = await buildContextPack({ indexRoot, project, query, retrievalBackend, lancedbUri });
-  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-  process.exit(0);
-}
-
-if (arg === "serve") {
-  const host = readFlag("--host") ?? "127.0.0.1";
-  const port = Number(readFlag("--port") ?? "7357");
-  const server = createProjectKnowledgeServer({ config });
-  await new Promise((resolve) => server.listen(port, host, resolve));
-  process.stdout.write(`Project knowledge server listening on http://${host}:${port}\n`);
-}
-
-if (arg === "config") {
-  const action = process.argv[3];
-
-  if (action === "get") {
-    process.stdout.write(`${JSON.stringify(config, null, 2)}\n`);
-    process.exit(0);
+  if (!arg || arg === "--help" || arg === "-h") {
+    process.stdout.write(`${helpText}\n`);
+    return;
   }
 
-  if (action === "set") {
-    const key = process.argv[4];
-    const value = process.argv[5];
+  if (!commands.includes(arg)) {
+    process.stderr.write(`Unknown command: ${arg}\n`);
+    process.stderr.write(`${helpText}\n`);
+    process.exitCode = 1;
+    return;
+  }
 
-    if (!key || value == null) {
-      process.stderr.write("config set requires <key> <value>\n");
-      process.exit(1);
+  if (arg === "index") {
+    const vaultRoot = readFlag("--vault-root") ?? config.vaultRoot;
+    const indexRoot = readFlag("--index-root") ?? config.indexRoot;
+    const retrievalBackend = readFlag("--retrieval-backend") ?? config.retrievalBackend;
+    const lancedbUri = readFlag("--lancedb-uri") ?? config.lancedbUri;
+    await buildIndexes({ vaultRoot, indexRoot, retrievalBackend, lancedbUri });
+    process.stdout.write(`Indexed vault: ${vaultRoot}\n`);
+    return;
+  }
+
+  if (arg === "list-projects") {
+    const vaultRoot = readFlag("--vault-root") ?? config.vaultRoot;
+    const projects = await listProjects(vaultRoot);
+    process.stdout.write(`${JSON.stringify({ vaultRoot, projects }, null, 2)}\n`);
+    return;
+  }
+
+  if (arg === "search") {
+    const indexRoot = readFlag("--index-root") ?? config.indexRoot;
+    const query = readFlag("--query");
+    const project = readFlag("--project");
+    const scope = readFlag("--scope") ?? (project ? "project" : "global");
+    const retrievalBackend = readFlag("--retrieval-backend") ?? config.retrievalBackend;
+    const lancedbUri = readFlag("--lancedb-uri") ?? config.lancedbUri;
+    if (!indexRoot || !query) {
+      process.stderr.write("search requires --index-root and --query\n");
+      process.exitCode = 1;
+      return;
+    }
+    const result = await searchIndex({ indexRoot, query, project, scope, retrievalBackend, lancedbUri });
+    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    return;
+  }
+
+  if (arg === "context-pack") {
+    const indexRoot = readFlag("--index-root") ?? config.indexRoot;
+    const project = readFlag("--project");
+    const query = readFlag("--query");
+    const retrievalBackend = readFlag("--retrieval-backend") ?? config.retrievalBackend;
+    const lancedbUri = readFlag("--lancedb-uri") ?? config.lancedbUri;
+    if (!project) {
+      process.stderr.write("context-pack requires --project\n");
+      process.exitCode = 1;
+      return;
+    }
+    const result = await buildContextPack({ indexRoot, project, query, retrievalBackend, lancedbUri });
+    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    return;
+  }
+
+  if (arg === "serve") {
+    const host = readFlag("--host") ?? "127.0.0.1";
+    const port = Number(readFlag("--port") ?? "7357");
+    const server = createProjectKnowledgeServer({ config });
+    await new Promise((resolve) => server.listen(port, host, resolve));
+    process.stdout.write(`Project knowledge server listening on http://${host}:${port}\n`);
+    return;
+  }
+
+  if (arg === "config") {
+    const action = process.argv[3];
+
+    if (action === "get") {
+      process.stdout.write(`${JSON.stringify(config, null, 2)}\n`);
+      return;
     }
 
-    if (!isAllowedConfigKey(key)) {
-      process.stderr.write(`Unsupported config key: ${key}\n`);
-      process.exit(1);
+    if (action === "set") {
+      const key = process.argv[4];
+      const value = process.argv[5];
+
+      if (!key || value == null) {
+        process.stderr.write("config set requires <key> <value>\n");
+        process.exitCode = 1;
+        return;
+      }
+
+      if (!isAllowedConfigKey(key)) {
+        process.stderr.write(`Unsupported config key: ${key}\n`);
+        process.exitCode = 1;
+        return;
+      }
+
+      const next = await setConfigValue({ key, value });
+      process.stdout.write(`${JSON.stringify(next, null, 2)}\n`);
+      return;
     }
 
-    const next = await setConfigValue({ key, value });
-    process.stdout.write(`${JSON.stringify(next, null, 2)}\n`);
-    process.exit(0);
+    process.stderr.write("config requires get or set\n");
+    process.exitCode = 1;
+    return;
   }
 
-  process.stderr.write("config requires get or set\n");
+  if (arg === "lint") {
+    const projectRoot = resolveProjectRoot({
+      config,
+      projectRoot: readFlag("--project-root"),
+      project: readFlag("--project")
+    });
+    if (!projectRoot) {
+      process.stderr.write("lint requires --project-root or --project\n");
+      process.exitCode = 1;
+      return;
+    }
+    const result = await lintProject(projectRoot);
+    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    process.exitCode = result.ok ? 0 : 1;
+    return;
+  }
+
+  if (arg === "write") {
+    const project = readFlag("--project");
+    const projectRoot = resolveProjectRoot({
+      config,
+      projectRoot: readFlag("--project-root"),
+      project
+    });
+    const docType = readFlag("--doc-type");
+    const slug = readFlag("--slug");
+    const title = readFlag("--title");
+    if (!projectRoot || !project || !docType || (!slug && !title)) {
+      process.stderr.write("write requires --project --doc-type and either --slug or --title, with optional --project-root override\n");
+      process.exitCode = 1;
+      return;
+    }
+    const createdPath = await writeProjectNote({
+      repoRoot,
+      projectRoot,
+      project,
+      docType,
+      slug,
+      title
+    });
+    process.stdout.write(`${createdPath}\n`);
+  }
+}
+
+try {
+  await main();
+} catch (error) {
+  process.stderr.write(`${error?.message ?? String(error)}\n`);
   process.exit(1);
-}
-
-if (arg === "lint") {
-  const projectRoot = resolveProjectRoot({
-    config,
-    projectRoot: readFlag("--project-root"),
-    project: readFlag("--project")
-  });
-  if (!projectRoot) {
-    process.stderr.write("lint requires --project-root or --project\n");
-    process.exit(1);
-  }
-  const result = await lintProject(projectRoot);
-  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-  process.exit(result.ok ? 0 : 1);
-}
-
-if (arg === "write") {
-  const project = readFlag("--project");
-  const projectRoot = resolveProjectRoot({
-    config,
-    projectRoot: readFlag("--project-root"),
-    project
-  });
-  const docType = readFlag("--doc-type");
-  const slug = readFlag("--slug");
-  const title = readFlag("--title");
-  if (!projectRoot || !project || !docType || (!slug && !title)) {
-    process.stderr.write("write requires --project --doc-type and either --slug or --title, with optional --project-root override\n");
-    process.exit(1);
-  }
-  const createdPath = await writeProjectNote({
-    repoRoot,
-    projectRoot,
-    project,
-    docType,
-    slug,
-    title
-  });
-  process.stdout.write(`${createdPath}\n`);
 }

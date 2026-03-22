@@ -45,15 +45,17 @@ Do not use this skill for:
 Two modes depending on how the tool is installed:
 
 ```bash
-# From a checked-out repo (locate root first):
-git rev-parse --show-toplevel   # find repo root
-project-knowledge <command>
+# Preferred from a checked-out repo:
+node bin/project-knowledge <command>
 
-# If installed globally / via npm link:
+# Fallback from the repo root:
+npm run cli -- <command>
+
+# Optional if installed globally / via npm link:
 project-knowledge <command>
 ```
 
-Prefer the global form when available. Fall back to `project-knowledge` only when working directly inside the repo.
+Prefer the repo-local form when the repository is available. Use the global form only as a convenience shortcut.
 
 ## Workflow
 

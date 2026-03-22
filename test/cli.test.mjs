@@ -74,3 +74,37 @@ test("config get prints effective config and config set updates allowed keys", a
   const parsedAfter = JSON.parse(after);
   assert.equal(parsedAfter.lancedbUri, "/tmp/lancedb-next");
 });
+
+test("search prints a friendly message when indexes have not been built yet", async () => {
+  const homeDir = await fs.mkdtemp(path.join(os.tmpdir(), "project-knowledge-cli-missing-index-"));
+  const configDir = path.join(homeDir, ".project-knowledge");
+  await fs.mkdir(configDir, { recursive: true });
+  await fs.writeFile(
+    path.join(configDir, "config.json"),
+    JSON.stringify({
+      vaultRoot: "/tmp/vault",
+      indexRoot: path.join(homeDir, "index"),
+      retrievalBackend: "json",
+      lancedbUri: path.join(homeDir, "lancedb")
+    }),
+    "utf8"
+  );
+
+  const env = {
+    ...process.env,
+    HOME: homeDir,
+    USERPROFILE: homeDir
+  };
+
+  await assert.rejects(
+    () => execFileAsync("node", [cliEntry, "search", "--project", "openclaw-dashboard", "--query", "skill manager"], {
+      cwd: repoRoot,
+      env
+    }),
+    (error) => {
+      assert.equal(error.code, 1);
+      assert.match(error.stderr, /Run `project-knowledge index` first\./);
+      return true;
+    }
+  );
+});
