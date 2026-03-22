@@ -1,0 +1,127 @@
+#!/usr/bin/env node
+
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+import { loadConfig, resolveProjectRoot } from "../src/config/load.mjs";
+import { buildIndexes } from "../src/index/build.mjs";
+import { buildContextPack } from "../src/search/context-pack.mjs";
+import { searchIndex } from "../src/search/search.mjs";
+import { lintProject } from "../src/lint/lint.mjs";
+import { writeProjectNote } from "../src/commands/write.mjs";
+import { listProjects } from "../src/vault/projects.mjs";
+
+const commands = ["write", "index", "list-projects", "search", "context-pack", "lint"];
+
+const helpText = [
+  "project-knowledge",
+  "",
+  "Usage:",
+  "  project-knowledge <command>",
+  "",
+  "Commands:",
+  ...commands.map((command) => `  ${command}`)
+].join("\n");
+
+const arg = process.argv[2];
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const config = await loadConfig();
+
+function readFlag(flagName) {
+  const index = process.argv.indexOf(flagName);
+  if (index === -1) return null;
+  return process.argv[index + 1] ?? null;
+}
+
+if (!arg || arg === "--help" || arg === "-h") {
+  process.stdout.write(`${helpText}\n`);
+  process.exit(0);
+}
+
+if (!commands.includes(arg)) {
+  process.stderr.write(`Unknown command: ${arg}\n`);
+  process.stderr.write(`${helpText}\n`);
+  process.exit(1);
+}
+
+if (arg === "index") {
+  const vaultRoot = readFlag("--vault-root") ?? config.vaultRoot;
+  const indexRoot = readFlag("--index-root") ?? config.indexRoot;
+  await buildIndexes({ vaultRoot, indexRoot });
+  process.stdout.write(`Indexed vault: ${vaultRoot}\n`);
+  process.exit(0);
+}
+
+if (arg === "list-projects") {
+  const vaultRoot = readFlag("--vault-root") ?? config.vaultRoot;
+  const projects = await listProjects(vaultRoot);
+  process.stdout.write(`${JSON.stringify({ vaultRoot, projects }, null, 2)}\n`);
+  process.exit(0);
+}
+
+if (arg === "search") {
+  const indexRoot = readFlag("--index-root") ?? config.indexRoot;
+  const query = readFlag("--query");
+  const project = readFlag("--project");
+  const scope = readFlag("--scope") ?? (project ? "project" : "global");
+  if (!indexRoot || !query) {
+    process.stderr.write("search requires --index-root and --query\n");
+    process.exit(1);
+  }
+  const result = await searchIndex({ indexRoot, query, project, scope });
+  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+  process.exit(0);
+}
+
+if (arg === "context-pack") {
+  const indexRoot = readFlag("--index-root") ?? config.indexRoot;
+  const project = readFlag("--project");
+  const query = readFlag("--query");
+  if (!project) {
+    process.stderr.write("context-pack requires --project\n");
+    process.exit(1);
+  }
+  const result = await buildContextPack({ indexRoot, project, query });
+  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+  process.exit(0);
+}
+
+if (arg === "lint") {
+  const projectRoot = resolveProjectRoot({
+    config,
+    projectRoot: readFlag("--project-root"),
+    project: readFlag("--project")
+  });
+  if (!projectRoot) {
+    process.stderr.write("lint requires --project-root or --project\n");
+    process.exit(1);
+  }
+  const result = await lintProject(projectRoot);
+  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+  process.exit(result.ok ? 0 : 1);
+}
+
+if (arg === "write") {
+  const project = readFlag("--project");
+  const projectRoot = resolveProjectRoot({
+    config,
+    projectRoot: readFlag("--project-root"),
+    project
+  });
+  const docType = readFlag("--doc-type");
+  const slug = readFlag("--slug");
+  const title = readFlag("--title");
+  if (!projectRoot || !project || !docType || (!slug && !title)) {
+    process.stderr.write("write requires --project --doc-type and either --slug or --title, with optional --project-root override\n");
+    process.exit(1);
+  }
+  const createdPath = await writeProjectNote({
+    repoRoot,
+    projectRoot,
+    project,
+    docType,
+    slug,
+    title
+  });
+  process.stdout.write(`${createdPath}\n`);
+}
