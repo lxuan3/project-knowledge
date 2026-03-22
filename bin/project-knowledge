@@ -3,27 +3,227 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { loadConfig, resolveProjectRoot } from "../src/config/load.mjs";
+import { loadConfig, resolveConfigPath, resolveProjectRoot } from "../src/config/load.mjs";
 import { isAllowedConfigKey, setConfigValue } from "../src/config/manage.mjs";
 import { buildIndexes } from "../src/index/build.mjs";
 import { buildContextPack } from "../src/search/context-pack.mjs";
 import { searchIndex } from "../src/search/search.mjs";
 import { createProjectKnowledgeServer } from "../src/server/http.mjs";
 import { lintProject } from "../src/lint/lint.mjs";
-import { writeProjectNote } from "../src/commands/write.mjs";
+import { resolveWriteTarget, writeProjectNote } from "../src/commands/write.mjs";
+import { renderDoctorReport, runDoctor } from "../src/commands/doctor.mjs";
 import { listProjects } from "../src/vault/projects.mjs";
 
-const commands = ["write", "index", "list-projects", "search", "context-pack", "config", "serve", "lint", "print-agent-guidance"];
+const commandDetails = {
+  write: {
+    summary: "Create a structured markdown note from a template",
+    usage: "project-knowledge write --project <name> --doc-type <type> [--title <title>|--slug <slug>]",
+    options: [
+      "--project <name>          Project slug used for path resolution and frontmatter",
+      "--doc-type <type>         Note type such as decision, runbook, reference, hypothesis, topic",
+      "--title <title>           Human title used to derive the slug when --slug is omitted",
+      "--slug <slug>             Explicit file slug",
+      "--project-root <path>     Override vaultRoot/<project> and write directly to this project directory",
+      "--project-type <type>     Project layout type: engineering, knowledge, content"
+    ],
+    examples: [
+      "project-knowledge write --project openclaw-dashboard --doc-type decision --title \"Repo First Sync\"",
+      "project-knowledge write --project brand-strategy --project-type knowledge --doc-type hypothesis --title \"Core Assumption\""
+    ]
+  },
+  where: {
+    summary: "Print resolved config, project, and write target paths as JSON",
+    usage: "project-knowledge where [--project <name>] [--doc-type <type>] [--title <title>|--slug <slug>]",
+    options: [
+      "--project <name>          Project slug used to resolve projectRoot from vaultRoot",
+      "--project-root <path>     Explicit project directory override",
+      "--doc-type <type>         When present with title or slug, preview the resolved write destination",
+      "--title <title>           Title used to derive the target slug",
+      "--slug <slug>             Explicit slug for write target preview",
+      "--project-type <type>     Project layout type: engineering, knowledge, content"
+    ],
+    examples: [
+      "project-knowledge where",
+      "project-knowledge where --project openclaw-dashboard",
+      "project-knowledge where --project openclaw-dashboard --doc-type decision --title \"Repo First Sync\""
+    ]
+  },
+  index: {
+    summary: "Rebuild local JSON index and optional LanceDB cache",
+    usage: "project-knowledge index [--vault-root <path>] [--index-root <path>] [--retrieval-backend <mode>] [--lancedb-uri <path>]",
+    options: [
+      "--vault-root <path>       Override configured vault root",
+      "--index-root <path>       Override configured JSON index path",
+      "--retrieval-backend <m>   auto, json, or lancedb",
+      "--lancedb-uri <path>      Override configured LanceDB cache path"
+    ],
+    examples: [
+      "project-knowledge index",
+      "project-knowledge index --retrieval-backend lancedb --lancedb-uri /path/to/local/project-knowledge/lancedb"
+    ]
+  },
+  "list-projects": {
+    summary: "List projects discovered under the configured vault root",
+    usage: "project-knowledge list-projects [--vault-root <path>]",
+    options: [
+      "--vault-root <path>       Override configured vault root before scanning"
+    ],
+    examples: [
+      "project-knowledge list-projects"
+    ]
+  },
+  search: {
+    summary: "Run a targeted query against local or remote retrieval backends",
+    usage: "project-knowledge search --query <text> [--project <name>] [--scope <project|global>]",
+    options: [
+      "--query <text>            Search query text",
+      "--project <name>          Limit to one project and default scope to project",
+      "--scope <scope>           project or global",
+      "--index-root <path>       Override configured JSON index path",
+      "--retrieval-backend <m>   auto, json, or lancedb",
+      "--lancedb-uri <path>      Override configured LanceDB cache path",
+      "--remote-base-url <url>   Generic remote query endpoint",
+      "--remote-primary-url <u>  Preferred remote query endpoint",
+      "--remote-backup-url <u>   Backup remote query endpoint"
+    ],
+    examples: [
+      "project-knowledge search --project openclaw-dashboard --query \"skill manager\"",
+      "project-knowledge search --query \"incident response\" --scope global"
+    ]
+  },
+  "context-pack": {
+    summary: "Build grouped project context for a query or project overview",
+    usage: "project-knowledge context-pack --project <name> [--query <text>]",
+    options: [
+      "--project <name>          Project slug to build context for",
+      "--query <text>            Optional query to bias retrieval toward a task",
+      "--index-root <path>       Override configured JSON index path",
+      "--retrieval-backend <m>   auto, json, or lancedb",
+      "--lancedb-uri <path>      Override configured LanceDB cache path",
+      "--remote-base-url <url>   Generic remote query endpoint",
+      "--remote-primary-url <u>  Preferred remote query endpoint",
+      "--remote-backup-url <u>   Backup remote query endpoint"
+    ],
+    examples: [
+      "project-knowledge context-pack --project openclaw-dashboard --query \"skill manager\"",
+      "project-knowledge context-pack --project openclaw-dashboard"
+    ]
+  },
+  config: {
+    summary: "Inspect or update ~/.project-knowledge/config.json",
+    usage: "project-knowledge config <get|set>",
+    options: [
+      "get                       Print the effective merged config as JSON",
+      "set <key> <value>         Update one supported config key in ~/.project-knowledge/config.json"
+    ],
+    examples: [
+      "project-knowledge config get",
+      "project-knowledge config set lancedbUri /path/to/local/project-knowledge/lancedb"
+    ]
+  },
+  serve: {
+    summary: "Start the lightweight HTTP query server",
+    usage: "project-knowledge serve [--host <host>] [--port <port>]",
+    options: [
+      "--host <host>             Bind host, default 127.0.0.1",
+      "--port <port>             Bind port, default 7357"
+    ],
+    examples: [
+      "project-knowledge serve",
+      "project-knowledge serve --host 0.0.0.0 --port 7357"
+    ]
+  },
+  lint: {
+    summary: "Validate a project knowledge directory",
+    usage: "project-knowledge lint (--project <name> | --project-root <path>)",
+    options: [
+      "--project <name>          Resolve projectRoot from vaultRoot/<project>",
+      "--project-root <path>     Validate an explicit project directory"
+    ],
+    examples: [
+      "project-knowledge lint --project openclaw-dashboard",
+      "project-knowledge lint --project-root /path/to/vault/openclaw-dashboard"
+    ]
+  },
+  "print-agent-guidance": {
+    summary: "Print a reusable guidance snippet for AI tool instructions",
+    usage: "project-knowledge print-agent-guidance",
+    options: [
+      "No options"
+    ],
+    examples: [
+      "project-knowledge print-agent-guidance"
+    ]
+  },
+  doctor: {
+    summary: "Run active probing for config, local retrieval, remote health, and optional project checks",
+    usage: "project-knowledge doctor [--project <name>] [--json]",
+    options: [
+      "--project <name>          Probe one project path in addition to global config and retrieval checks",
+      "--json                    Print structured JSON instead of a human-readable report"
+    ],
+    examples: [
+      "project-knowledge doctor",
+      "project-knowledge doctor --project openclaw-dashboard",
+      "project-knowledge doctor --project openclaw-dashboard --json"
+    ]
+  }
+};
 
-const helpText = [
-  "project-knowledge",
-  "",
-  "Usage:",
-  "  project-knowledge <command>",
-  "",
-  "Commands:",
-  ...commands.map((command) => `  ${command}`)
-].join("\n");
+const commands = Object.keys(commandDetails);
+
+function renderGeneralHelp() {
+  return [
+    "project-knowledge",
+    "",
+    "Usage:",
+    "  project-knowledge <command> [options]",
+    "  project-knowledge help <command>",
+    "",
+    "Commands:",
+    ...commands.map((command) => `  ${command.padEnd(20)} ${commandDetails[command].summary}`),
+    "",
+    "Key options:",
+    "  write --project <name> --doc-type <type> --title <title>",
+    "  where --project <name> [--doc-type <type>] [--title <title>|--slug <slug>]",
+    "  search --project <name> --query <text>",
+    "  context-pack --project <name> [--query <text>]",
+    "  index [--vault-root <path>] [--index-root <path>] [--retrieval-backend auto|json|lancedb]",
+    "  config get",
+    "  config set <key> <value>",
+    "",
+    "Examples:",
+    "  project-knowledge where --project openclaw-dashboard",
+    "  project-knowledge where --project openclaw-dashboard --doc-type decision --title \"Repo First Sync\"",
+    "  project-knowledge write --project openclaw-dashboard --doc-type decision --title \"Repo First Sync\"",
+    "  project-knowledge search --project openclaw-dashboard --query \"skill manager\"",
+    "  project-knowledge context-pack --project openclaw-dashboard --query \"skill manager\"",
+    "  project-knowledge doctor --project openclaw-dashboard --json",
+    "  project-knowledge config set lancedbUri /path/to/local/project-knowledge/lancedb",
+    "",
+    "Docs:",
+    "  README.md for overview, QUICKSTART.md for command-first usage, HUMAN_SETUP.md for detailed setup"
+  ].join("\n");
+}
+
+function renderCommandHelp(command) {
+  const detail = commandDetails[command];
+  if (!detail) return null;
+  return [
+    `Command: ${command}`,
+    "",
+    detail.summary,
+    "",
+    "Usage:",
+    `  ${detail.usage}`,
+    "",
+    "Options:",
+    ...detail.options.map((line) => `  ${line}`),
+    "",
+    "Examples:",
+    ...detail.examples.map((line) => `  ${line}`)
+  ].join("\n");
+}
 
 const agentGuidanceText = [
   "### Project Knowledge",
@@ -47,13 +247,30 @@ async function main() {
   const config = await loadConfig();
 
   if (!arg || arg === "--help" || arg === "-h") {
-    process.stdout.write(`${helpText}\n`);
+    process.stdout.write(`${renderGeneralHelp()}\n`);
+    return;
+  }
+
+  if (arg === "help") {
+    const command = process.argv[3];
+    if (!command) {
+      process.stdout.write(`${renderGeneralHelp()}\n`);
+      return;
+    }
+    const commandHelp = renderCommandHelp(command);
+    if (!commandHelp) {
+      process.stderr.write(`Unknown command: ${command}\n`);
+      process.stderr.write(`${renderGeneralHelp()}\n`);
+      process.exitCode = 1;
+      return;
+    }
+    process.stdout.write(`${commandHelp}\n`);
     return;
   }
 
   if (!commands.includes(arg)) {
     process.stderr.write(`Unknown command: ${arg}\n`);
-    process.stderr.write(`${helpText}\n`);
+    process.stderr.write(`${renderGeneralHelp()}\n`);
     process.exitCode = 1;
     return;
   }
@@ -77,6 +294,63 @@ async function main() {
     const vaultRoot = readFlag("--vault-root") ?? config.vaultRoot;
     const projects = await listProjects(vaultRoot);
     process.stdout.write(`${JSON.stringify({ vaultRoot, projects }, null, 2)}\n`);
+    return;
+  }
+
+  if (arg === "where") {
+    const project = readFlag("--project");
+    const projectRoot = resolveProjectRoot({
+      config,
+      projectRoot: readFlag("--project-root"),
+      project
+    });
+    const projectType = readFlag("--project-type") ?? "engineering";
+    const docType = readFlag("--doc-type");
+    const slug = readFlag("--slug");
+    const title = readFlag("--title");
+    const payload = {
+      configPath: resolveConfigPath(),
+      vaultRoot: config.vaultRoot,
+      indexRoot: config.indexRoot,
+      lancedbUri: config.lancedbUri,
+      retrievalBackend: config.retrievalBackend,
+      remoteBaseUrl: config.remoteBaseUrl,
+      remotePrimaryUrl: config.remotePrimaryUrl,
+      remoteBackupUrl: config.remoteBackupUrl,
+      project: project ?? null,
+      projectRoot
+    };
+
+    if (project && projectRoot && docType && (slug || title)) {
+      const target = resolveWriteTarget({
+        projectRoot,
+        projectType,
+        docType,
+        slug,
+        title
+      });
+      payload.projectType = projectType;
+      payload.docType = docType;
+      payload.slug = target.effectiveSlug;
+      payload.writePath = target.destination;
+    }
+
+    process.stdout.write(`${JSON.stringify(payload, null, 2)}\n`);
+    return;
+  }
+
+  if (arg === "doctor") {
+    const report = await runDoctor({
+      config,
+      project: readFlag("--project"),
+      configPath: resolveConfigPath()
+    });
+    if (readFlag("--json") != null || process.argv.includes("--json")) {
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    } else {
+      process.stdout.write(renderDoctorReport(report));
+    }
+    process.exitCode = report.ok ? 0 : 1;
     return;
   }
 

@@ -1,125 +1,74 @@
 # 项目知识库 / project-knowledge
 
-`project-knowledge` is a project knowledge workflow for Obsidian-backed engineering notes.
+`project-knowledge` is a project knowledge workflow for Obsidian-backed markdown.
 
-`project-knowledge` 是一套基于 Obsidian 的项目知识工作流，面向工程项目、agent 和多设备检索。
+`project-knowledge` 是一套围绕 Obsidian markdown 的项目知识工作流，用来统一项目知识的写入、索引、检索和跨工具复用。
 
 Repository / 仓库地址:
 
 - `https://github.com/lxuan3/project-knowledge`
 
-It standardizes how project knowledge is written, indexed, queried, and shared across tools like Codex, Claude, OpenClaw, and Cowork.
-
-它统一了项目知识的写入、索引、检索和跨工具复用方式，适用于 Codex、Claude、OpenClaw、Cowork 等环境。
-
 ## What It Is / 它是什么
-
-`project-knowledge` is built around one simple rule:
-
-`project-knowledge` 围绕一条简单规则展开：
-
-- Obsidian markdown is the source of truth
-- JSON index and LanceDB are rebuildable retrieval caches
-- agents should query project knowledge before assuming project history
-
-- Obsidian markdown 才是真源
-- JSON index 和 LanceDB 都只是可重建的检索缓存
-- agent 在假设项目历史之前，应先查询项目知识
 
 This repository contains:
 
+- a local CLI
+- indexing and retrieval logic
+- optional LanceDB-backed retrieval cache
+- a lightweight HTTP query server
+- integration docs for humans and AI tools
+
 这个仓库包含：
 
-- a skill definition
-- a local CLI
-- local indexing and retrieval logic
-- a lightweight HTTP query server
-- docs for humans and AI tools
-
-- skill 定义
 - 本地 CLI
-- 本地索引与检索逻辑
-- 一个轻量 HTTP 查询服务
+- 索引与检索逻辑
+- 可选的 LanceDB 检索缓存
+- 轻量 HTTP 查询服务
 - 面向人类和 AI 的接入文档
 
-Human-facing name / 面向用户显示名:
+Core rule / 核心规则:
 
-- `项目知识库`
-- `project knowledge`
+- Obsidian markdown is the source of truth
+- JSON index and LanceDB are rebuildable caches
+- agents should query project knowledge before assuming project history
 
-Internal id / 内部正式 id:
+- Obsidian markdown 才是真源
+- JSON index 和 LanceDB 都只是可重建缓存
+- agent 不应在未检索项目前提下假设项目历史
 
-- `project-knowledge`
+## Dependencies / 依赖边界
 
-Supported project types / 支持的项目类型:
+`project-knowledge` depends on an Obsidian-style vault layout, not on the Obsidian app process itself.
 
-- `engineering`
-- `knowledge`
-- `content`
+`project-knowledge` 依赖的是 Obsidian 风格的 vault 目录结构，而不是 Obsidian 应用进程本身。
 
-## How It Works / 它如何工作
+Important:
 
-At a high level:
+- You do not need an Obsidian CLI
+- You do not need Obsidian running in the background
+- You do need markdown files stored under a vault root
+- You should treat `vaultRoot` as the canonical location for project notes
 
-整体流程是：
+- 不需要 Obsidian CLI
+- 不需要后台运行 Obsidian
+- 需要一个真实存在的 vault 根目录，里面放 markdown
+- `vaultRoot` 应被视为项目知识真源位置
 
-1. Write formal project knowledge into an Obsidian vault
-2. Run `project-knowledge index`
-3. Query with `search` or `context-pack`
-4. Optionally expose the same query node to other devices with `serve`
+LanceDB is optional:
 
-1. 把正式项目知识写进 Obsidian vault
-2. 运行 `project-knowledge index`
-3. 用 `search` 或 `context-pack` 查询
-4. 如有需要，用 `serve` 把同一台主机的查询能力共享给其他设备
+- `retrievalBackend: "auto"` prefers LanceDB and falls back to JSON
+- `retrievalBackend: "json"` disables LanceDB use
+- `retrievalBackend: "lancedb"` requires LanceDB to be usable
 
-The default retrieval model is:
-
-默认检索模型是：
-
-- local JSON index
-- local LanceDB
-- optional remote query endpoints
-- fallback instead of hard failure
-
-- 本地 JSON index
-- 本地 LanceDB
-- 可选远程查询地址
-- 优先 fallback，而不是直接硬失败
-
-## Installation / 安装
-
-`project-knowledge` currently works best as a checked-out repository plus CLI.
-
-当前最稳的安装方式是：直接 `git clone` 仓库，然后使用 CLI。
-
-### 1. Clone the repo / 拉代码
+## Install / 安装
 
 ```bash
 git clone https://github.com/lxuan3/project-knowledge
 cd project-knowledge
-```
-
-### 2. Install dependencies / 安装依赖
-
-```bash
 npm install
 ```
 
-### 3. Optional global shortcut / 可选全局快捷命令
-
-```bash
-npm link
-project-knowledge --help
-```
-
-If `npm link` is unreliable on your platform, use the repo-local forms instead.
-
-如果 `npm link` 在你的平台上不稳定，就直接用仓库内调用方式。
-
 Preferred invocation order:
-
-推荐调用优先级：
 
 ```bash
 project-knowledge --help
@@ -133,330 +82,85 @@ node bin/project-knowledge --help
 npm run cli -- --help
 ```
 
-### 4. Create config / 写配置
-
-Default config path:
-
-默认配置路径：
-
-- macOS / Linux: `~/.project-knowledge/config.json`
-- Windows: `%USERPROFILE%\\.project-knowledge\\config.json`
-
-Example:
-
-```json
-{
-  "vaultRoot": "/path/to/your/default/obsidian/vault",
-  "indexRoot": "/path/to/local/project-knowledge/index",
-  "retrievalBackend": "auto",
-  "lancedbUri": "/path/to/local/project-knowledge/lancedb",
-  "remoteBaseUrl": null,
-  "remotePrimaryUrl": null,
-  "remoteBackupUrl": null
-}
-```
-
-Important:
-
-重要说明：
-
-- `vaultRoot` points to the default Obsidian vault root
-- `lancedbUri` is always a local filesystem path
-- `remotePrimaryUrl` / `remoteBackupUrl` are network addresses for remote query service
-
-- `vaultRoot` 指向默认 Obsidian vault 根目录
-- `lancedbUri` 永远是本机文件路径
-- `remotePrimaryUrl` / `remoteBackupUrl` 是远程查询服务地址
-
-## Verify Installation / 验证安装
-
-Run this minimal sequence:
-
-跑这组最小验证：
+Command-specific help:
 
 ```bash
+project-knowledge help write
+```
+
+If you want a global shim:
+
+```bash
+npm link
+```
+
+If Windows does not expose `project-knowledge.cmd` reliably after `npm link`, keep using:
+
+```bash
+node bin/project-knowledge --help
+```
+
+or:
+
+```bash
+npm run cli -- --help
+```
+
+## Core Commands / 核心命令
+
+```bash
+project-knowledge help write
+project-knowledge help doctor
+project-knowledge doctor --project openclaw-dashboard
+project-knowledge where --project openclaw-dashboard
 project-knowledge list-projects
 project-knowledge index
 project-knowledge search --project openclaw-dashboard --query "skill manager"
-```
-
-If these commands work, then:
-
-如果这三步正常，说明：
-
-- the vault path is correct
-- indexing works
-- retrieval works
-- the CLI is usable
-
-- vault 路径正确
-- 索引正常
-- 检索正常
-- CLI 可用
-
-## Upgrade / 升级
-
-When updating `project-knowledge`, use this sequence:
-
-更新 `project-knowledge` 时，建议按这个顺序执行：
-
-### 1. Update the repo / 更新仓库
-
-```bash
-git pull
-```
-
-### 2. Refresh dependencies / 更新依赖
-
-```bash
-npm install
-```
-
-### 3. Rebuild indexes / 重建索引
-
-```bash
-project-knowledge index
-```
-
-### 4. Restart the query server if needed / 如有需要重启查询服务
-
-If you run `serve` manually, restart that process.
-
-如果你是手动跑 `serve`，直接重启该进程。
-
-If you use the macOS launchd service, restart it with:
-
-如果你使用 macOS 的 `launchd` 托管服务，用下面这条：
-
-```bash
-launchctl kickstart -k gui/$(id -u)/ai.project-knowledge.server
-```
-
-### 5. Run a smoke check / 做一次冒烟验证
-
-```bash
-project-knowledge config get
-project-knowledge search --project openclaw-dashboard --query "skill manager"
 project-knowledge context-pack --project openclaw-dashboard --query "skill manager"
-curl -L --fail http://127.0.0.1:7357/health
-```
-
-If the tool is installed on another machine as a remote client, also re-check:
-
-如果另一台机器是通过远程方式接入的，也应再检查：
-
-- `remotePrimaryUrl`
-- `remoteBackupUrl`
-- `transport_backend`
-- `retrieval_backend`
-
-## Basic Workflow / 基本工作流
-
-Use this workflow for day-to-day project work:
-
-日常项目工作建议按这个顺序走：
-
-1. `list-projects` if the project name is unclear
-2. `search` for targeted questions
-3. `context-pack` for complex tasks
-4. `write` for formal notes
-5. `lint` after structural changes
-6. `index` after note creation, rename, move, or delete
-
-1. 如果项目名不确定，先 `list-projects`
-2. 简单问题优先 `search`
-3. 复杂任务优先 `context-pack`
-4. 正式知识沉淀走 `write`
-5. 结构变更后跑 `lint`
-6. 新增、重命名、移动、删除笔记后跑 `index`
-
-## Commands / 命令面
-
-Core commands:
-
-核心命令：
-
-- `project-knowledge list-projects`
-- `project-knowledge search`
-- `project-knowledge context-pack`
-- `project-knowledge write`
-- `project-knowledge lint`
-- `project-knowledge index`
-- `project-knowledge config`
-- `project-knowledge serve`
-- `project-knowledge print-agent-guidance`
-- `project-knowledge print-agent-guidance`
-
-`write` now supports multiple project types.
-
-`write` 现在支持多种项目类型。
-
-Examples:
-
-示例：
-
-```bash
-project-knowledge write \
-  --project brand-strategy-2026 \
-  --project-type knowledge \
-  --doc-type hypothesis \
-  --title "Core Assumption"
-```
-
-```bash
-project-knowledge write \
-  --project content-studio \
-  --project-type content \
-  --doc-type topic \
-  --title "Episode Angle"
-```
-
-## Retrieval Model / 检索模型
-
-Local retrieval layers:
-
-本地检索层：
-
-- JSON index: fallback backend
-- LanceDB: preferred backend when available
-
-- JSON index：fallback 后端
-- LanceDB：优先后端
-
-`retrievalBackend` supports:
-
-`retrievalBackend` 支持：
-
-- `"auto"`: prefer LanceDB, fall back to JSON
-- `"json"`: force JSON
-- `"lancedb"`: force LanceDB
-
-- `"auto"`：优先 LanceDB，失败回退 JSON
-- `"json"`：强制 JSON
-- `"lancedb"`：强制 LanceDB
-
-Remote retrieval priority:
-
-远程优先级：
-
-1. `remotePrimaryUrl`
-2. `remoteBackupUrl`
-3. `remoteBaseUrl`
-4. local fallback
-
-This makes it easy to combine LAN + Tailscale + local fallback.
-
-这样就可以组合使用内网地址、Tailscale 地址和本地 fallback。
-
-## HTTP Query Server / HTTP 查询服务
-
-Start the local server:
-
-启动本地服务：
-
-```bash
-project-knowledge serve --host 0.0.0.0 --port 7357
-```
-
-Endpoints:
-
-接口：
-
-- `GET /health`
-- `GET /search?project=...&query=...`
-- `GET /context-pack?project=...&query=...`
-
-This is the recommended way to share one host's retrieval node with other devices.
-
-这也是把主机查询能力共享给其他设备的推荐方式。
-
-## Config Commands / 配置命令
-
-Inspect current config:
-
-查看当前配置：
-
-```bash
+project-knowledge write --project openclaw-dashboard --doc-type decision --title "Repo First Sync"
+project-knowledge lint --project openclaw-dashboard
 project-knowledge config get
 ```
 
-Update one key:
-
-修改单个配置项：
+Use `where` to inspect resolved paths before writing:
 
 ```bash
-project-knowledge config set lancedbUri /path/to/local/project-knowledge/lancedb
-project-knowledge config set remotePrimaryUrl http://192.168.0.148:7357
-project-knowledge config set remoteBackupUrl http://100.112.159.108:7357
+project-knowledge where \
+  --project openclaw-dashboard \
+  --doc-type decision \
+  --title "Repo First Sync"
 ```
 
-Supported keys:
-
-支持的配置键：
-
-- `vaultRoot`
-- `indexRoot`
-- `retrievalBackend`
-- `lancedbUri`
-- `remoteBaseUrl`
-- `remotePrimaryUrl`
-- `remoteBackupUrl`
-
-## Agent Guidance / AGENT.md 片段
-
-If you want to add the recommended default workflow rules into an `AGENTS.md`, print the standard snippet with:
-
-如果你想把推荐的默认工作流规则加到 `AGENTS.md` 里，可以直接输出标准片段：
+Use `doctor` to actively probe local and remote setup:
 
 ```bash
-project-knowledge print-agent-guidance
+project-knowledge doctor
 ```
 
-This command does not modify files automatically.
+```bash
+project-knowledge doctor --project openclaw-dashboard
+```
 
-这个命令不会自动改文件，只负责输出一段可复制文本。
+```bash
+project-knowledge doctor --project openclaw-dashboard --json
+```
 
-## Current Installation Recommendation / 当前安装建议
+## Docs / 文档入口
 
-For Codex and similar tools:
+Use these documents by audience:
 
-对于 Codex 和类似工具：
+- [HUMAN_SETUP.md](/Users/hypernode/Github/project-knowledge/HUMAN_SETUP.md): detailed setup, Obsidian assumptions, LanceDB notes, config paths, command catalog
+- [QUICKSTART.md](/Users/hypernode/Github/project-knowledge/QUICKSTART.md): fastest path to first successful command
+- [AI_INTEGRATION.md](/Users/hypernode/Github/project-knowledge/AI_INTEGRATION.md): guidance for AI tool integration
+- [PROMPTS.md](/Users/hypernode/Github/project-knowledge/PROMPTS.md): reusable prompts and usage conventions
 
-- prefer `git clone` + direct CLI usage
-- do not rely on generic repo-root skill installers yet
+## Typical Workflow / 常见工作流
 
-- 推荐 `git clone` + 直接调用 CLI
-- 目前不要依赖通用的 repo-root skill installer
-
-Some installers that sparse-check out `.` may only copy top-level files and miss `bin/`, `src/`, and `templates/`.
-
-有些安装器如果对 `.` 做 sparse checkout，可能只复制顶层文件，漏掉 `bin/`、`src/`、`templates/`。
-
-## Reinstall Behavior / 重装行为
-
-Reinstalling the skill does not reset user config.
-
-重装 skill 不会重置用户配置。
-
-Config lives outside the repo:
-
-配置文件在仓库外：
-
-- macOS / Linux: `~/.project-knowledge/config.json`
-- Windows: `%USERPROFILE%\\.project-knowledge\\config.json`
-
-## Documentation / 文档入口
-
-Repository docs:
-
-仓库内文档：
-
-- [QUICKSTART.md](./QUICKSTART.md)
-- [HUMAN_SETUP.md](./HUMAN_SETUP.md)
-- [AI_INTEGRATION.md](./AI_INTEGRATION.md)
-- [PROMPTS.md](./PROMPTS.md)
-- [SKILL.md](./SKILL.md)
-
-If you also maintain an Obsidian knowledge base for this project, keep an architecture note, runbooks, decisions, and reference docs in sync there as well.
-
-如果你也在 Obsidian 里维护这套系统，建议同步保留 architecture、runbook、decision、reference 这些文档层次。
+1. Use `where` or `config get` to confirm resolved paths.
+2. Use `list-projects` if the project slug is unclear.
+3. Run `doctor` first if setup looks wrong or retrieval behaves unexpectedly.
+4. Run `search` for focused questions.
+5. Run `context-pack` for unfamiliar tasks.
+6. Use `write` to create formal knowledge notes.
+7. Run `lint` after reorganizing or batch-editing project notes.
+8. Run `index` after note changes so local retrieval stays fresh.

@@ -1,28 +1,81 @@
 # Human Setup
 
-This document is for the human operator.
+This document is the detailed setup and operations guide for the human operator.
 
-## Repository
+## 1. What `project-knowledge` depends on
 
-Repository root:
+Source of truth:
 
-```bash
-<repo-root>
-```
+- markdown files inside your Obsidian-style vault
 
-## Local config
+What it does not require:
 
-Create:
+- the Obsidian desktop app to be running
+- an Obsidian CLI
+- Obsidian Sync
 
-```bash
-~/.project-knowledge/config.json
-```
+What it does require:
+
+- a stable vault root directory
+- one subdirectory per project under that vault root, unless you pass `--project-root`
+- markdown notes created with the expected templates or layout
+
+Default assumption:
+
+- `vaultRoot` points to your default project-knowledge vault root
+- each project lives under `vaultRoot/<project>`
 
 Example:
 
+```text
+/path/to/vault/
+  openclaw-dashboard/
+    00-overview.md
+    01-architecture.md
+    02-decisions/
+    03-runbooks/
+    04-reference/
+```
+
+## 2. Install the repo
+
+```bash
+git clone https://github.com/lxuan3/project-knowledge
+cd project-knowledge
+npm install
+```
+
+Optional global shortcut:
+
+```bash
+npm link
+project-knowledge --help
+```
+
+Cross-platform fallback:
+
+```bash
+node bin/project-knowledge --help
+```
+
+```bash
+npm run cli -- --help
+```
+
+If Windows does not expose `project-knowledge.cmd` reliably after `npm link`, use one of the repo-local forms above.
+
+## 3. Create local config
+
+Config file path:
+
+- macOS / Linux: `~/.project-knowledge/config.json`
+- Windows: `%USERPROFILE%\\.project-knowledge\\config.json`
+
+Minimal example:
+
 ```json
 {
-  "vaultRoot": "/path/to/your/default/obsidian/vault",
+  "vaultRoot": "/path/to/your/obsidian/Openclaw",
   "indexRoot": "/path/to/local/project-knowledge/index",
   "retrievalBackend": "auto",
   "lancedbUri": "/path/to/local/project-knowledge/lancedb",
@@ -32,71 +85,15 @@ Example:
 }
 ```
 
-## Assumptions
+Meaning of each field:
 
-- Obsidian markdown is the source of truth
-- the tool reads markdown directly from the default Obsidian vault
-- it does not require the Obsidian app or an Obsidian CLI
-- local index is rebuildable cache
-- do not sync the index through Obsidian Sync
-
-## Verify install
-
-```bash
-project-knowledge --help
-```
-
-If the command is not in `PATH` yet:
-
-```bash
-cd <repo-root>
-node bin/project-knowledge --help
-```
-
-Cross-platform repo-local fallback:
-
-```bash
-cd <repo-root>
-npm run test
-npm run cli -- --help
-```
-
-Optional local install:
-
-```bash
-cd <repo-root>
-npm link
-project-knowledge --help
-```
-
-## Daily commands
-
-List projects:
-
-```bash
-project-knowledge list-projects
-```
-
-Lint a project:
-
-```bash
-project-knowledge lint --project openclaw-dashboard
-```
-
-Rebuild index:
-
-```bash
-project-knowledge index
-```
-
-Backend behavior:
-
-- `retrievalBackend: "auto"`: prefer LanceDB, fall back to JSON
-- `retrievalBackend: "json"`: use only the original JSON backend
-- `retrievalBackend: "lancedb"`: require LanceDB
-- `remoteBaseUrl`: if set, `search` and `context-pack` use the remote HTTP service instead of local indexes
-- `remotePrimaryUrl`: preferred remote service URL
-- `remoteBackupUrl`: backup remote service URL
+- `vaultRoot`: default source-of-truth vault root
+- `indexRoot`: local JSON retrieval cache
+- `retrievalBackend`: `auto`, `json`, or `lancedb`
+- `lancedbUri`: local LanceDB storage directory
+- `remoteBaseUrl`: generic remote query endpoint
+- `remotePrimaryUrl`: preferred remote query endpoint
+- `remoteBackupUrl`: backup remote query endpoint
 
 Remote priority:
 
@@ -105,10 +102,133 @@ Remote priority:
 3. `remoteBaseUrl`
 4. local fallback
 
+## 4. LanceDB setup
+
+LanceDB is optional. You only need it if you want LanceDB-backed retrieval instead of JSON-only retrieval.
+
+The repository already declares the dependency in `package.json`, so the normal setup is simply:
+
+```bash
+npm install
+```
+
+Then set a local storage path:
+
+```bash
+project-knowledge config set lancedbUri /path/to/local/project-knowledge/lancedb
+```
+
+If you want LanceDB enabled by default:
+
+```bash
+project-knowledge config set retrievalBackend lancedb
+```
+
+If you want automatic fallback:
+
+```bash
+project-knowledge config set retrievalBackend auto
+```
+
+Notes:
+
+- `lancedbUri` is always a local filesystem path
+- you should not point `lancedbUri` at an Obsidian-synced folder
+- LanceDB is a cache, not the source of truth
+- after enabling or moving LanceDB, run `project-knowledge index`
+
+If one machine only uses another machine's remote query server, that client machine does not need its own LanceDB setup.
+
+## 5. Verify resolved paths
+
+Inspect the effective config and path resolution:
+
+```bash
+project-knowledge where
+```
+
+Inspect a specific project:
+
+```bash
+project-knowledge where --project openclaw-dashboard
+```
+
+Preview the exact write destination before creating a note:
+
+```bash
+project-knowledge where \
+  --project openclaw-dashboard \
+  --doc-type decision \
+  --title "Repo First Sync"
+```
+
+The output is JSON so it is easy to read in a terminal and easy to consume from scripts or agents.
+
+Typical fields:
+
+- `configPath`
+- `vaultRoot`
+- `indexRoot`
+- `lancedbUri`
+- `projectRoot`
+- `writePath`
+
+If the values look wrong or retrieval still fails, run active diagnostics:
+
+```bash
+project-knowledge doctor
+```
+
+```bash
+project-knowledge doctor --project openclaw-dashboard
+```
+
+```bash
+project-knowledge doctor --project openclaw-dashboard --json
+```
+
+## 6. Daily commands
+
+Show help:
+
+```bash
+project-knowledge --help
+```
+
+Show command-specific help:
+
+```bash
+project-knowledge help write
+```
+
+Show effective config:
+
+```bash
+project-knowledge config get
+```
+
+List projects:
+
+```bash
+project-knowledge list-projects
+```
+
+Rebuild local indexes:
+
+```bash
+project-knowledge index
+```
+
 Search:
 
 ```bash
 project-knowledge search --project openclaw-dashboard --query "skill manager"
+```
+
+Global search:
+
+```bash
+project-knowledge search --query "incident response" --scope global
 ```
 
 Build a context pack:
@@ -117,30 +237,23 @@ Build a context pack:
 project-knowledge context-pack --project openclaw-dashboard --query "skill manager"
 ```
 
-Inspect current config:
+Build a whole-project context pack without a query:
 
 ```bash
-project-knowledge config get
+project-knowledge context-pack --project openclaw-dashboard
 ```
 
-Update LanceDB path:
+Run active diagnostics:
 
 ```bash
-project-knowledge config set lancedbUri /path/to/local/project-knowledge/lancedb
+project-knowledge doctor --project openclaw-dashboard
 ```
 
-Set a remote query server:
+Get machine-readable diagnostics:
 
 ```bash
-project-knowledge config set remoteBaseUrl http://192.168.0.148:7357
+project-knowledge doctor --project openclaw-dashboard --json
 ```
-
-```bash
-project-knowledge config set remotePrimaryUrl http://192.168.0.148:7357
-project-knowledge config set remoteBackupUrl http://100.112.159.108:7357
-```
-
-On a secondary machine that only queries another computer's service, `remoteBaseUrl` is the key setting. That machine does not need its own LanceDB install.
 
 Write a note:
 
@@ -148,28 +261,76 @@ Write a note:
 project-knowledge write --project openclaw-dashboard --doc-type decision --title "Repo First Sync"
 ```
 
-## Upgrade workflow
+Lint a project:
 
-If another tool or AI updates this repo:
+```bash
+project-knowledge lint --project openclaw-dashboard
+```
+
+Run the HTTP server:
+
+```bash
+project-knowledge serve --host 127.0.0.1 --port 7357
+```
+
+## 7. `write` path rules
+
+`write` resolves the target in this order:
+
+1. Use `--project-root` if you pass it
+2. Otherwise use `vaultRoot/<project>`
+3. Then place the note under the doc-type-specific subdirectory
+
+Examples:
+
+- `engineering decision` -> `02-decisions/<slug>.md`
+- `engineering runbook` -> `03-runbooks/<slug>.md`
+- `knowledge hypothesis` -> `02-hypotheses/<slug>.md`
+- `content topic` -> `02-topics/<slug>.md`
+
+Use `where` if you want to inspect the exact resolved path without writing the file.
+
+## 8. Remote usage
+
+Set a single remote endpoint:
+
+```bash
+project-knowledge config set remoteBaseUrl http://192.168.0.148:7357
+```
+
+Set primary and backup remote endpoints:
+
+```bash
+project-knowledge config set remotePrimaryUrl http://192.168.0.148:7357
+project-knowledge config set remoteBackupUrl http://100.112.159.108:7357
+```
+
+On a secondary machine that only queries a remote server:
+
+- `remoteBaseUrl` or `remotePrimaryUrl` is the key setting
+- local LanceDB is optional
+- local JSON indexes are optional if you are comfortable depending on the remote service
+
+## 9. Upgrade workflow
 
 ```bash
 cd <repo-root>
 git pull
-npm run test
-```
-
-Then rebuild index if note structure or parsing changed:
-
-```bash
+npm install
+npm test
 project-knowledge index
+project-knowledge doctor
 ```
 
-If you enable LanceDB, rebuild once so both JSON and LanceDB stay in sync.
+If you run the local HTTP server manually, restart it after upgrading.
 
-Reinstalling the skill does not reset `~/.project-knowledge/config.json`.
+If you use a managed service wrapper, restart that wrapper after upgrading.
 
-## What not to do
+Reinstalling the skill or recloning the repo does not reset `~/.project-knowledge/config.json`.
 
-- do not treat the local index as the source of truth
-- do not store project notes primarily in the index
-- do not let tools write arbitrary markdown without linting
+## 10. What not to do
+
+- do not treat the JSON index or LanceDB as the source of truth
+- do not sync caches through Obsidian Sync
+- do not let agents write arbitrary markdown outside the expected structure and then skip linting
+- do not assume `write` targets a cache directory; it writes into project knowledge markdown

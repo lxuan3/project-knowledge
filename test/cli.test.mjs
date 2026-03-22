@@ -7,16 +7,27 @@ import { fileURLToPath } from "node:url";
 import fs from "node:fs/promises";
 import os from "node:os";
 
+import { buildIndexes } from "../src/index/build.mjs";
+import { createProjectKnowledgeServer } from "../src/server/http.mjs";
+
 const execFileAsync = promisify(execFile);
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const cliEntry = path.join(repoRoot, "bin", "project-knowledge");
+
+async function writeFile(filePath, content) {
+  await fs.mkdir(path.dirname(filePath), { recursive: true });
+  await fs.writeFile(filePath, content, "utf8");
+}
 
 test("CLI help lists core commands", async () => {
   const { stdout } = await execFileAsync("node", [cliEntry, "--help"], {
     cwd: repoRoot
   });
 
+  assert.match(stdout, /Usage:/);
+  assert.match(stdout, /project-knowledge <command> \[options\]/);
   assert.match(stdout, /write/);
+  assert.match(stdout, /where/);
   assert.match(stdout, /index/);
   assert.match(stdout, /list-projects/);
   assert.match(stdout, /search/);
@@ -24,6 +35,34 @@ test("CLI help lists core commands", async () => {
   assert.match(stdout, /serve/);
   assert.match(stdout, /lint/);
   assert.match(stdout, /print-agent-guidance/);
+  assert.match(stdout, /Examples:/);
+  assert.match(stdout, /project-knowledge where --project openclaw-dashboard/);
+  assert.match(stdout, /project-knowledge write --project openclaw-dashboard --doc-type decision --title "Repo First Sync"/);
+});
+
+test("CLI help command prints command-specific usage and examples", async () => {
+  const { stdout } = await execFileAsync("node", [cliEntry, "help", "write"], {
+    cwd: repoRoot
+  });
+
+  assert.match(stdout, /Command:\s+write/);
+  assert.match(stdout, /Create a structured markdown note from a template/);
+  assert.match(stdout, /Usage:\s*\n\s*project-knowledge write --project <name> --doc-type <type>/);
+  assert.match(stdout, /Options:/);
+  assert.match(stdout, /--project-type <type>/);
+  assert.match(stdout, /Examples:/);
+  assert.match(stdout, /project-knowledge write --project openclaw-dashboard --doc-type decision --title "Repo First Sync"/);
+});
+
+test("CLI help command prints doctor usage and examples", async () => {
+  const { stdout } = await execFileAsync("node", [cliEntry, "help", "doctor"], {
+    cwd: repoRoot
+  });
+
+  assert.match(stdout, /Command:\s+doctor/);
+  assert.match(stdout, /active probing/i);
+  assert.match(stdout, /--json/);
+  assert.match(stdout, /project-knowledge doctor --project openclaw-dashboard --json/);
 });
 
 test("print-agent-guidance outputs standard AGENTS.md snippet", async () => {
@@ -191,4 +230,253 @@ test("write supports --project-type for non-engineering projects", async () => {
   const content = await fs.readFile(createdPath, "utf8");
   assert.match(content, /project_type: knowledge/);
   assert.match(content, /doc_type: hypothesis/);
+});
+
+test("where prints resolved config and project paths as json", async () => {
+  const homeDir = await fs.mkdtemp(path.join(os.tmpdir(), "project-knowledge-cli-where-"));
+  const vaultRoot = path.join(homeDir, "obsidian", "Openclaw");
+  const configDir = path.join(homeDir, ".project-knowledge");
+  await fs.mkdir(configDir, { recursive: true });
+  await fs.writeFile(
+    path.join(configDir, "config.json"),
+    JSON.stringify({
+      vaultRoot,
+      indexRoot: path.join(homeDir, "index"),
+      retrievalBackend: "auto",
+      lancedbUri: path.join(homeDir, "lancedb"),
+      remoteBaseUrl: null,
+      remotePrimaryUrl: null,
+      remoteBackupUrl: null
+    }),
+    "utf8"
+  );
+
+  const env = {
+    ...process.env,
+    HOME: homeDir,
+    USERPROFILE: homeDir
+  };
+
+  const { stdout } = await execFileAsync("node", [
+    cliEntry,
+    "where",
+    "--project",
+    "openclaw-dashboard",
+    "--doc-type",
+    "decision",
+    "--title",
+    "Repo First Sync"
+  ], {
+    cwd: repoRoot,
+    env
+  });
+
+  const parsed = JSON.parse(stdout);
+  assert.equal(parsed.configPath, path.join(homeDir, ".project-knowledge", "config.json"));
+  assert.equal(parsed.vaultRoot, vaultRoot);
+  assert.equal(parsed.projectRoot, path.join(vaultRoot, "openclaw-dashboard"));
+  assert.equal(parsed.docType, "decision");
+  assert.match(parsed.writePath, /openclaw-dashboard[\\/]+02-decisions[\\/]+repo-first-sync\.md$/);
+});
+
+test("doctor --json reports config, local retrieval, remote health, and project checks", async () => {
+  const homeDir = await fs.mkdtemp(path.join(os.tmpdir(), "project-knowledge-cli-doctor-"));
+  const vaultRoot = path.join(homeDir, "obsidian", "Openclaw");
+  const indexRoot = path.join(homeDir, "index");
+  const lancedbUri = path.join(homeDir, "lancedb");
+  const projectRoot = path.join(vaultRoot, "openclaw-dashboard");
+  const configDir = path.join(homeDir, ".project-knowledge");
+
+  await writeFile(
+    path.join(projectRoot, "00-overview.md"),
+    [
+      "---",
+      "project: openclaw-dashboard",
+      "doc_type: overview",
+      "status: active",
+      "updated_at: 2026-03-23",
+      "---",
+      "",
+      "# Overview",
+      "",
+      "## Summary",
+      "",
+      "Dashboard overview."
+    ].join("\n")
+  );
+
+  await buildIndexes({ vaultRoot, indexRoot, retrievalBackend: "json", lancedbUri });
+  await fs.mkdir(lancedbUri, { recursive: true });
+  await fs.mkdir(configDir, { recursive: true });
+
+  const remoteServer = createProjectKnowledgeServer({
+    config: {
+      vaultRoot,
+      indexRoot,
+      retrievalBackend: "json",
+      lancedbUri
+    }
+  });
+  await new Promise((resolve) => remoteServer.listen(0, "127.0.0.1", resolve));
+
+  try {
+    const remoteAddress = remoteServer.address();
+    const remotePrimaryUrl = `http://127.0.0.1:${remoteAddress.port}`;
+
+    await fs.writeFile(
+      path.join(configDir, "config.json"),
+      JSON.stringify({
+        vaultRoot,
+        indexRoot,
+        retrievalBackend: "auto",
+        lancedbUri,
+        remotePrimaryUrl
+      }),
+      "utf8"
+    );
+
+    const env = {
+      ...process.env,
+      HOME: homeDir,
+      USERPROFILE: homeDir
+    };
+
+    const { stdout } = await execFileAsync("node", [
+      cliEntry,
+      "doctor",
+      "--project",
+      "openclaw-dashboard",
+      "--json"
+    ], {
+      cwd: repoRoot,
+      env
+    });
+
+    const parsed = JSON.parse(stdout);
+    assert.equal(parsed.ok, true);
+    assert.equal(parsed.project, "openclaw-dashboard");
+    assert.equal(parsed.summary.fail, 0);
+    assert.match(JSON.stringify(parsed.checks), /remotePrimaryUrl/);
+    assert.match(JSON.stringify(parsed.checks), /projectRoot/);
+    assert.match(JSON.stringify(parsed.checks), /index read/i);
+    assert.match(JSON.stringify(parsed.checks), /remote health/i);
+  } finally {
+    await new Promise((resolve, reject) => remoteServer.close((error) => error ? reject(error) : resolve()));
+  }
+});
+
+test("doctor prints a readable report and warns on unreachable remote", async () => {
+  const homeDir = await fs.mkdtemp(path.join(os.tmpdir(), "project-knowledge-cli-doctor-warn-"));
+  const vaultRoot = path.join(homeDir, "obsidian", "Openclaw");
+  const indexRoot = path.join(homeDir, "index");
+  const configDir = path.join(homeDir, ".project-knowledge");
+  await fs.mkdir(vaultRoot, { recursive: true });
+  await fs.mkdir(configDir, { recursive: true });
+  await fs.writeFile(
+    path.join(configDir, "config.json"),
+    JSON.stringify({
+      vaultRoot,
+      indexRoot,
+      retrievalBackend: "json",
+      lancedbUri: path.join(homeDir, "lancedb"),
+      remotePrimaryUrl: "http://127.0.0.1:9"
+    }),
+    "utf8"
+  );
+
+  const env = {
+    ...process.env,
+    HOME: homeDir,
+    USERPROFILE: homeDir
+  };
+
+  const { stdout } = await execFileAsync("node", [cliEntry, "doctor"], {
+    cwd: repoRoot,
+    env
+  });
+
+  assert.match(stdout, /Project Knowledge Doctor/);
+  assert.match(stdout, /WARN/);
+  assert.match(stdout, /remote health/i);
+  assert.match(stdout, /config/i);
+});
+
+test("doctor warns when LanceDB is configured but chunks table is missing under auto backend", async () => {
+  const homeDir = await fs.mkdtemp(path.join(os.tmpdir(), "project-knowledge-cli-doctor-lancedb-warn-"));
+  const vaultRoot = path.join(homeDir, "obsidian", "Openclaw");
+  const indexRoot = path.join(homeDir, "index");
+  const lancedbUri = path.join(homeDir, "lancedb");
+  const configDir = path.join(homeDir, ".project-knowledge");
+  await fs.mkdir(vaultRoot, { recursive: true });
+  await fs.mkdir(lancedbUri, { recursive: true });
+  await fs.mkdir(configDir, { recursive: true });
+  await writeFile(path.join(indexRoot, "global", "chunks.json"), JSON.stringify({ chunks: [] }, null, 2));
+  await fs.writeFile(
+    path.join(configDir, "config.json"),
+    JSON.stringify({
+      vaultRoot,
+      indexRoot,
+      retrievalBackend: "auto",
+      lancedbUri
+    }),
+    "utf8"
+  );
+
+  const env = {
+    ...process.env,
+    HOME: homeDir,
+    USERPROFILE: homeDir
+  };
+
+  const { stdout } = await execFileAsync("node", [cliEntry, "doctor", "--json"], {
+    cwd: repoRoot,
+    env
+  });
+
+  const parsed = JSON.parse(stdout);
+  assert.equal(parsed.summary.fail, 0);
+  assert.ok(parsed.summary.warn >= 1);
+  assert.match(JSON.stringify(parsed.checks), /lancedb table/i);
+  assert.match(JSON.stringify(parsed.checks), /missing table|cannot open|chunks/i);
+});
+
+test("doctor fails when lancedb backend is required but LanceDB is unavailable", async () => {
+  const homeDir = await fs.mkdtemp(path.join(os.tmpdir(), "project-knowledge-cli-doctor-lancedb-fail-"));
+  const vaultRoot = path.join(homeDir, "obsidian", "Openclaw");
+  const indexRoot = path.join(homeDir, "index");
+  const configDir = path.join(homeDir, ".project-knowledge");
+  await fs.mkdir(vaultRoot, { recursive: true });
+  await fs.mkdir(configDir, { recursive: true });
+  await writeFile(path.join(indexRoot, "global", "chunks.json"), JSON.stringify({ chunks: [] }, null, 2));
+  await fs.writeFile(
+    path.join(configDir, "config.json"),
+    JSON.stringify({
+      vaultRoot,
+      indexRoot,
+      retrievalBackend: "lancedb",
+      lancedbUri: path.join(homeDir, "missing-lancedb")
+    }),
+    "utf8"
+  );
+
+  const env = {
+    ...process.env,
+    HOME: homeDir,
+    USERPROFILE: homeDir,
+    NODE_OPTIONS: "--require ./test/support/mock-lancedb-fail.cjs"
+  };
+
+  await assert.rejects(
+    () => execFileAsync("node", [cliEntry, "doctor", "--json"], {
+      cwd: repoRoot,
+      env
+    }),
+    (error) => {
+      assert.equal(error.code, 1);
+      const parsed = JSON.parse(error.stdout);
+      assert.ok(parsed.summary.fail >= 1);
+      assert.match(JSON.stringify(parsed.checks), /lancedb connect/i);
+      return true;
+    }
+  );
 });

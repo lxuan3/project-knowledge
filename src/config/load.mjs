@@ -2,6 +2,14 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
+export function resolveHomeDir(homeDir = process.env.HOME ?? process.env.USERPROFILE ?? os.homedir()) {
+  return homeDir;
+}
+
+export function resolveConfigPath(homeDir = resolveHomeDir()) {
+  return path.join(homeDir, ".project-knowledge", "config.json");
+}
+
 function defaultConfig(homeDir) {
   return {
     vaultRoot: path.join(homeDir, "obsidian", "Openclaw"),
@@ -14,9 +22,9 @@ function defaultConfig(homeDir) {
   };
 }
 
-export async function loadConfig({ homeDir = process.env.HOME ?? process.env.USERPROFILE ?? os.homedir() } = {}) {
+export async function loadConfig({ homeDir = resolveHomeDir() } = {}) {
   const defaults = defaultConfig(homeDir);
-  const configPath = path.join(homeDir, ".project-knowledge", "config.json");
+  const configPath = resolveConfigPath(homeDir);
 
   try {
     const raw = await fs.readFile(configPath, "utf8");

@@ -45,7 +45,7 @@ function replaceTemplate(content, { project, projectType, docType }) {
     .replace("updated_at: YYYY-MM-DD", `updated_at: ${new Date().toISOString().slice(0, 10)}`);
 }
 
-export async function writeProjectNote({ repoRoot, projectRoot, project, projectType = "engineering", docType, slug = null, title = null }) {
+export function resolveWriteTarget({ projectRoot, projectType = "engineering", docType, slug = null, title = null }) {
   const projectLayout = PROJECT_LAYOUTS[projectType];
   if (!projectLayout) {
     throw new Error(`Unsupported project type: ${projectType}`);
@@ -61,12 +61,30 @@ export async function writeProjectNote({ repoRoot, projectRoot, project, project
     throw new Error("slug or title is required for this doc type");
   }
 
-  const templatePath = path.join(repoRoot, "templates", templateConfig.template);
-  const template = await fs.readFile(templatePath, "utf8");
   const fileName = templateConfig.fileName ?? `${effectiveSlug}.md`;
-
   const destination = path.join(projectRoot, templateConfig.dir, fileName);
-  await fs.mkdir(path.dirname(destination), { recursive: true });
-  await fs.writeFile(destination, replaceTemplate(template, { project, projectType, docType }), "utf8");
-  return destination;
+
+  return {
+    templateName: templateConfig.template,
+    fileName,
+    destination,
+    effectiveSlug
+  };
+}
+
+export async function writeProjectNote({ repoRoot, projectRoot, project, projectType = "engineering", docType, slug = null, title = null }) {
+  const target = resolveWriteTarget({
+    projectRoot,
+    projectType,
+    docType,
+    slug,
+    title
+  });
+
+  const templatePath = path.join(repoRoot, "templates", target.templateName);
+  const template = await fs.readFile(templatePath, "utf8");
+
+  await fs.mkdir(path.dirname(target.destination), { recursive: true });
+  await fs.writeFile(target.destination, replaceTemplate(template, { project, projectType, docType }), "utf8");
+  return target.destination;
 }
