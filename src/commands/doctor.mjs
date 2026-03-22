@@ -115,6 +115,18 @@ function statusLabel(status) {
   return status.toUpperCase();
 }
 
+function colorizeStatus(status) {
+  const label = statusLabel(status);
+  const colors = {
+    ok: "\u001b[32m",
+    warn: "\u001b[33m",
+    fail: "\u001b[31m"
+  };
+  const color = colors[status] ?? "";
+  const reset = color ? "\u001b[0m" : "";
+  return `${color}${label}${reset}`;
+}
+
 export function renderDoctorReport(report) {
   const lines = [
     "Project Knowledge Doctor",
@@ -130,7 +142,7 @@ export function renderDoctorReport(report) {
   }
 
   for (const check of report.checks) {
-    lines.push(`[${statusLabel(check.status)}] ${check.name}`);
+    lines.push(`[${colorizeStatus(check.status)}] ${check.name}`);
     if (check.target) lines.push(`  target: ${check.target}`);
     if (check.message) lines.push(`  message: ${check.message}`);
   }

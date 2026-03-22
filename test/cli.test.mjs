@@ -396,7 +396,7 @@ test("doctor prints a readable report and warns on unreachable remote", async ()
   });
 
   assert.match(stdout, /Project Knowledge Doctor/);
-  assert.match(stdout, /WARN/);
+  assert.match(stdout, /\u001b\[33mWARN\u001b\[0m/);
   assert.match(stdout, /remote health/i);
   assert.match(stdout, /config/i);
 });
