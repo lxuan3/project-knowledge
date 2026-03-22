@@ -6,7 +6,7 @@
   "bin": {
     "project-knowledge": "./bin/project-knowledge"
   },
-  "dependencies": {
+  "optionalDependencies": {
     "@lancedb/lancedb": "^0.21.3"
   },
   "scripts": {

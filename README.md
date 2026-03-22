@@ -42,23 +42,99 @@ Core rule / 核心规则:
 
 `project-knowledge` 依赖的是 Obsidian 风格的 vault 目录结构，而不是 Obsidian 应用进程本身。
 
-Important:
+### Obsidian / Obsidian 依赖
+
+Why it is useful:
+
+- Obsidian markdown is the source of truth
+- notes stay human-readable, editable, and portable
+- humans and agents can collaborate on the same knowledge base without inventing a custom storage format
+
+它的好处：
+
+- Obsidian markdown 是知识真源
+- 笔记天然可读、可编辑、可迁移
+- 人和 agent 可以围绕同一份知识协作，而不需要额外发明私有存储格式
+
+What is actually required:
 
 - You do not need an Obsidian CLI
 - You do not need Obsidian running in the background
 - You do need markdown files stored under a vault root
 - You should treat `vaultRoot` as the canonical location for project notes
 
+实际需要的是：
+
 - 不需要 Obsidian CLI
 - 不需要后台运行 Obsidian
 - 需要一个真实存在的 vault 根目录，里面放 markdown
 - `vaultRoot` 应被视为项目知识真源位置
 
-LanceDB is optional:
+Cost if you do not use it:
+
+- you lose a clear canonical source and drift toward tool-local memory or cache-only workflows
+- review, migration, and manual repair become harder
+- cross-tool reuse becomes weaker because the knowledge is no longer grounded in plain markdown files
+
+如果不用它，代价是：
+
+- 你会失去明确的知识真源，系统更容易退化成“工具内部记忆”或“只剩缓存”的状态
+- 审阅、迁移、手工修复都会更困难
+- 跨工具复用会变弱，因为知识不再落在通用 markdown 文件里
+
+### LanceDB / LanceDB 依赖
+
+LanceDB is optional.
+
+LanceDB 是可选依赖。
+
+Install behavior:
+
+- `npm install` will attempt to install the optional LanceDB package
+- if a machine only uses remote retrieval or JSON-only retrieval, LanceDB does not need to be operationally available
+- use `project-knowledge doctor` to verify whether LanceDB is actually healthy on the current machine
+
+安装行为：
+
+- `npm install` 会尝试安装这个可选的 LanceDB 包
+- 如果某台机器只走远端检索或 JSON-only 检索，LanceDB 不需要在运行时真正可用
+- 可以用 `project-knowledge doctor` 检查当前机器上的 LanceDB 是否真的健康可用
+
+Why it is useful:
+
+- it improves local retrieval performance
+- it gives a better retrieval path for larger vaults or heavier query usage
+- with `retrievalBackend: "auto"`, it can be preferred when healthy without giving up JSON fallback
+
+它的好处：
+
+- 能提升本地检索性能
+- 对更大的 vault 或更频繁的查询更有价值
+- 在 `retrievalBackend: "auto"` 下，可以优先使用它，同时保留 JSON fallback
+
+What happens if you do not use it:
+
+- `retrievalBackend: "json"` disables LanceDB use and keeps the system on JSON-only retrieval
+- this is simpler operationally, but retrieval performance and capability may be weaker
+- `doctor` should treat missing LanceDB as a warning in `auto` mode, not necessarily as a hard failure
+
+如果不用它，会怎样：
+
+- `retrievalBackend: "json"` 会完全关闭 LanceDB，系统退回到 JSON-only 检索
+- 运维更简单，但检索性能和能力可能更弱
+- 在 `auto` 模式下，`doctor` 会把缺失 LanceDB 视为降级 warning，而不一定是硬故障
+
+Backend modes:
 
 - `retrievalBackend: "auto"` prefers LanceDB and falls back to JSON
 - `retrievalBackend: "json"` disables LanceDB use
 - `retrievalBackend: "lancedb"` requires LanceDB to be usable
+
+后端模式：
+
+- `retrievalBackend: "auto"` 优先使用 LanceDB，不可用时回退到 JSON
+- `retrievalBackend: "json"` 禁用 LanceDB
+- `retrievalBackend: "lancedb"` 要求 LanceDB 必须可用
 
 ## Install / 安装
 
