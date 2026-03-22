@@ -51,6 +51,12 @@ Internal id / 内部正式 id:
 
 - `project-knowledge`
 
+Supported project types / 支持的项目类型:
+
+- `engineering`
+- `knowledge`
+- `content`
+
 ## How It Works / 它如何工作
 
 At a high level:
@@ -223,6 +229,31 @@ Core commands:
 - `project-knowledge config`
 - `project-knowledge serve`
 - `project-knowledge print-agent-guidance`
+- `project-knowledge print-agent-guidance`
+
+`write` now supports multiple project types.
+
+`write` 现在支持多种项目类型。
+
+Examples:
+
+示例：
+
+```bash
+project-knowledge write \
+  --project brand-strategy-2026 \
+  --project-type knowledge \
+  --doc-type hypothesis \
+  --title "Core Assumption"
+```
+
+```bash
+project-knowledge write \
+  --project content-studio \
+  --project-type content \
+  --doc-type topic \
+  --title "Episode Angle"
+```
 
 ## Retrieval Model / 检索模型
 

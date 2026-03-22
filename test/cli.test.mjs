@@ -40,12 +40,36 @@ test("print-agent-guidance outputs standard AGENTS.md snippet", async () => {
 });
 
 test("list-projects lists projects from configured vault root", async () => {
+  const homeDir = await fs.mkdtemp(path.join(os.tmpdir(), "project-knowledge-cli-projects-"));
+  const vaultRoot = path.join(homeDir, "vault");
+  const configDir = path.join(homeDir, ".project-knowledge");
+  await fs.mkdir(path.join(vaultRoot, "alpha"), { recursive: true });
+  await fs.mkdir(path.join(vaultRoot, "beta"), { recursive: true });
+  await fs.mkdir(configDir, { recursive: true });
+  await fs.writeFile(path.join(vaultRoot, "alpha", "00-overview.md"), "# Alpha\n", "utf8");
+  await fs.writeFile(path.join(vaultRoot, "beta", "00-overview.md"), "# Beta\n", "utf8");
+  await fs.writeFile(
+    path.join(configDir, "config.json"),
+    JSON.stringify({
+      vaultRoot,
+      indexRoot: path.join(homeDir, "index"),
+      retrievalBackend: "auto",
+      lancedbUri: path.join(homeDir, "lancedb"),
+      remoteBaseUrl: null,
+      remotePrimaryUrl: null,
+      remoteBackupUrl: null
+    }),
+    "utf8"
+  );
+
+  const env = { ...process.env, HOME: homeDir, USERPROFILE: homeDir };
   const { stdout } = await execFileAsync("node", [cliEntry, "list-projects"], {
-    cwd: repoRoot
+    cwd: repoRoot,
+    env
   });
 
-  assert.match(stdout, /openclaw-dashboard/);
-  assert.match(stdout, /openclaw-feishu-minutes/);
+  assert.match(stdout, /"project": "alpha"/);
+  assert.match(stdout, /"project": "beta"/);
 });
 
 test("config get prints effective config and config set updates allowed keys", async () => {
@@ -139,4 +163,32 @@ test("search prints a friendly message when indexes have not been built yet", as
       return true;
     }
   );
+});
+
+test("write supports --project-type for non-engineering projects", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "project-knowledge-cli-write-"));
+  const projectRoot = path.join(root, "brand-strategy");
+
+  const { stdout } = await execFileAsync("node", [
+    cliEntry,
+    "write",
+    "--project",
+    "brand-strategy",
+    "--project-root",
+    projectRoot,
+    "--project-type",
+    "knowledge",
+    "--doc-type",
+    "hypothesis",
+    "--title",
+    "Core Assumption"
+  ], {
+    cwd: repoRoot
+  });
+
+  assert.match(stdout, /02-hypotheses/);
+  const createdPath = stdout.trim();
+  const content = await fs.readFile(createdPath, "utf8");
+  assert.match(content, /project_type: knowledge/);
+  assert.match(content, /doc_type: hypothesis/);
 });

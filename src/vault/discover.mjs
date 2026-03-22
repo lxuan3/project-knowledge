@@ -38,6 +38,7 @@ export async function discoverProjectDocuments(projectRoot) {
       filePath,
       sourceRelpath: path.relative(projectRoot, filePath),
       project: data.project ?? path.basename(projectRoot),
+      projectType: data.project_type ?? "engineering",
       docType: data.doc_type ?? null,
       status: data.status ?? null,
       tags: Array.isArray(data.tags) ? data.tags : [],

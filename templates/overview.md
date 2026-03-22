@@ -1,5 +1,6 @@
 ---
 project: <project-slug>
+project_type: engineering
 doc_type: overview
 status: active
 tags: []

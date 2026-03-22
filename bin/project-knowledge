@@ -205,11 +205,12 @@ async function main() {
       projectRoot: readFlag("--project-root"),
       project
     });
+    const projectType = readFlag("--project-type") ?? "engineering";
     const docType = readFlag("--doc-type");
     const slug = readFlag("--slug");
     const title = readFlag("--title");
     if (!projectRoot || !project || !docType || (!slug && !title)) {
-      process.stderr.write("write requires --project --doc-type and either --slug or --title, with optional --project-root override\n");
+      process.stderr.write("write requires --project --doc-type and either --slug or --title, with optional --project-root and --project-type overrides\n");
       process.exitCode = 1;
       return;
     }
@@ -217,6 +218,7 @@ async function main() {
       repoRoot,
       projectRoot,
       project,
+      projectType,
       docType,
       slug,
       title

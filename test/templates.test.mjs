@@ -7,7 +7,20 @@ import { fileURLToPath } from "node:url";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const templatesDir = path.join(repoRoot, "templates");
 const schemaPath = path.join(repoRoot, "schemas", "note-frontmatter.schema.json");
-const templateNames = ["overview", "architecture", "decision", "runbook", "reference"];
+const templateNames = [
+  "overview",
+  "architecture",
+  "decision",
+  "runbook",
+  "reference",
+  "landscape",
+  "hypothesis",
+  "idea",
+  "experiment",
+  "strategy",
+  "topic",
+  "production"
+];
 
 test("templates include required frontmatter keys", async () => {
   for (const templateName of templateNames) {
@@ -16,13 +29,15 @@ test("templates include required frontmatter keys", async () => {
 
     assert.match(content, /^---\n/);
     assert.match(content, /^project:/m);
+    assert.match(content, /^project_type:/m);
     assert.match(content, /^doc_type:/m);
     assert.match(content, /^status:/m);
   }
 });
 
-test("frontmatter schema requires project, doc_type, and status", async () => {
+test("frontmatter schema requires project, project_type, doc_type, and status", async () => {
   const schema = JSON.parse(await fs.readFile(schemaPath, "utf8"));
 
-  assert.deepEqual(schema.required, ["project", "doc_type", "status"]);
+  assert.deepEqual(schema.required, ["project", "project_type", "doc_type", "status"]);
+  assert.deepEqual(schema.properties.project_type.enum, ["engineering", "knowledge", "content"]);
 });

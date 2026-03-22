@@ -92,6 +92,14 @@ When working on a project:
 5. Prefer `project-knowledge index` after note creation, moves, or renames
 6. If `retrievalBackend` is `auto`, expect the tool to prefer LanceDB and fall back to JSON automatically
 
+Current project model:
+
+- `engineering`
+- `knowledge`
+- `content`
+
+When creating new notes for non-engineering projects, pass `--project-type knowledge` or `--project-type content` to `write`.
+
 ## Supported commands
 
 ### List projects
@@ -155,8 +163,25 @@ project-knowledge config set remoteBackupUrl http://100.112.159.108:7357
 ```bash
 project-knowledge write \
   --project openclaw-dashboard \
+  --project-type engineering \
   --doc-type decision \
   --title "Repo First Sync"
+```
+
+```bash
+project-knowledge write \
+  --project brand-strategy-2026 \
+  --project-type knowledge \
+  --doc-type hypothesis \
+  --title "Core Assumption"
+```
+
+```bash
+project-knowledge write \
+  --project content-studio \
+  --project-type content \
+  --doc-type topic \
+  --title "Episode Angle"
 ```
 
 ### Print AGENTS.md guidance

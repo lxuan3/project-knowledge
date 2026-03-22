@@ -1,11 +1,15 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
-  "required": ["project", "doc_type", "status"],
+  "required": ["project", "project_type", "doc_type", "status"],
   "properties": {
     "project": {
       "type": "string",
       "minLength": 1
+    },
+    "project_type": {
+      "type": "string",
+      "enum": ["engineering", "knowledge", "content"]
     },
     "doc_type": {
       "type": "string"

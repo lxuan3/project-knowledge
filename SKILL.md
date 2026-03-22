@@ -104,11 +104,22 @@ Create formal notes through the CLI so folder placement and frontmatter stay con
 ```bash
 project-knowledge write \
   --project <project> \
+  --project-type <engineering|knowledge|content> \
   --doc-type <overview|architecture|decision|runbook|reference> \
   --title "<title>"
 ```
 
 The CLI creates the file with standard frontmatter and a template body. Edit the generated file to add actual content.
+
+For non-engineering projects, supported doc types also include:
+
+- `landscape`
+- `hypothesis`
+- `idea`
+- `experiment`
+- `strategy`
+- `topic`
+- `production`
 
 ### 3. Validate and refresh
 
