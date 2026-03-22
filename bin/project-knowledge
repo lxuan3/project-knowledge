@@ -7,11 +7,12 @@ import { loadConfig, resolveProjectRoot } from "../src/config/load.mjs";
 import { buildIndexes } from "../src/index/build.mjs";
 import { buildContextPack } from "../src/search/context-pack.mjs";
 import { searchIndex } from "../src/search/search.mjs";
+import { createProjectKnowledgeServer } from "../src/server/http.mjs";
 import { lintProject } from "../src/lint/lint.mjs";
 import { writeProjectNote } from "../src/commands/write.mjs";
 import { listProjects } from "../src/vault/projects.mjs";
 
-const commands = ["write", "index", "list-projects", "search", "context-pack", "lint"];
+const commands = ["write", "index", "list-projects", "search", "context-pack", "serve", "lint"];
 
 const helpText = [
   "project-knowledge",
@@ -90,6 +91,14 @@ if (arg === "context-pack") {
   const result = await buildContextPack({ indexRoot, project, query, retrievalBackend, lancedbUri });
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
   process.exit(0);
+}
+
+if (arg === "serve") {
+  const host = readFlag("--host") ?? "127.0.0.1";
+  const port = Number(readFlag("--port") ?? "7357");
+  const server = createProjectKnowledgeServer({ config });
+  await new Promise((resolve) => server.listen(port, host, resolve));
+  process.stdout.write(`Project knowledge server listening on http://${host}:${port}\n`);
 }
 
 if (arg === "lint") {

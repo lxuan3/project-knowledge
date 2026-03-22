@@ -18,6 +18,7 @@ test("CLI help lists core commands", async () => {
   assert.match(stdout, /index/);
   assert.match(stdout, /list-projects/);
   assert.match(stdout, /search/);
+  assert.match(stdout, /serve/);
   assert.match(stdout, /lint/);
 });
 
