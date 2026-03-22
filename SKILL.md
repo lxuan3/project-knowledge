@@ -9,7 +9,16 @@ Use this skill when project context lives in Obsidian and should be treated as s
 
 Human-facing name: `项目知识库`
 
+Preferred English name: `project knowledge`
+
 Internal id: `project-knowledge`
+
+Accepted trigger phrases:
+
+- `项目知识库`
+- `项目知识`
+- `project knowledge`
+- `project context`
 
 ## Overview
 

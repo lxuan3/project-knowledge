@@ -7,6 +7,13 @@ Reusable prompts for integrating AI tools with `project-knowledge`.
 ```text
 你现在需要接入并使用我的项目知识库系统 `project-knowledge`。
 
+自然语言触发词约定：
+- 中文优先使用“项目知识库”
+- 中文可接受别名：“项目知识”
+- 英文优先使用“project knowledge”
+- 英文可接受别名：“project context”
+- 上述词都视为调用 `project-knowledge`
+
 规则：
 1. Obsidian markdown 是唯一真源，不要把本地索引当真源。
 2. 在处理某个已有项目前，优先先检索项目知识，不要直接假设背景。

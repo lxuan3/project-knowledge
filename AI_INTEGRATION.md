@@ -5,7 +5,21 @@ This document is for AI tools and agents that need to use `project-knowledge`.
 ## Identity
 
 - Human-facing name: `项目知识库`
+- Preferred English name: `project knowledge`
 - Internal skill / tool id: `project-knowledge`
+
+Accepted natural-language trigger phrases:
+
+- `项目知识库`
+- `项目知识`
+- `project knowledge`
+- `project context`
+
+Preferred usage:
+
+- use `项目知识库` in Chinese conversations
+- use `project knowledge` in English conversations
+- treat all accepted trigger phrases as requests to invoke `project-knowledge`
 
 ## Source of truth
 
