@@ -194,6 +194,62 @@ If these commands work, then:
 - 检索正常
 - CLI 可用
 
+## Upgrade / 升级
+
+When updating `project-knowledge`, use this sequence:
+
+更新 `project-knowledge` 时，建议按这个顺序执行：
+
+### 1. Update the repo / 更新仓库
+
+```bash
+git pull
+```
+
+### 2. Refresh dependencies / 更新依赖
+
+```bash
+npm install
+```
+
+### 3. Rebuild indexes / 重建索引
+
+```bash
+project-knowledge index
+```
+
+### 4. Restart the query server if needed / 如有需要重启查询服务
+
+If you run `serve` manually, restart that process.
+
+如果你是手动跑 `serve`，直接重启该进程。
+
+If you use the macOS launchd service, restart it with:
+
+如果你使用 macOS 的 `launchd` 托管服务，用下面这条：
+
+```bash
+launchctl kickstart -k gui/$(id -u)/ai.project-knowledge.server
+```
+
+### 5. Run a smoke check / 做一次冒烟验证
+
+```bash
+project-knowledge config get
+project-knowledge search --project openclaw-dashboard --query "skill manager"
+project-knowledge context-pack --project openclaw-dashboard --query "skill manager"
+curl -L --fail http://127.0.0.1:7357/health
+```
+
+If the tool is installed on another machine as a remote client, also re-check:
+
+如果另一台机器是通过远程方式接入的，也应再检查：
+
+- `remotePrimaryUrl`
+- `remoteBackupUrl`
+- `transport_backend`
+- `retrieval_backend`
+
 ## Basic Workflow / 基本工作流
 
 Use this workflow for day-to-day project work:
