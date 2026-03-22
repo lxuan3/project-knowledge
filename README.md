@@ -4,6 +4,10 @@
 
 `project-knowledge` 是一套基于 Obsidian 的项目知识工作流，面向工程项目、agent 和多设备检索。
 
+Repository / 仓库地址:
+
+- `https://github.com/lxuan3/project-knowledge`
+
 It standardizes how project knowledge is written, indexed, queried, and shared across tools like Codex, Claude, OpenClaw, and Cowork.
 
 它统一了项目知识的写入、索引、检索和跨工具复用方式，适用于 Codex、Claude、OpenClaw、Cowork 等环境。
@@ -86,7 +90,7 @@ The default retrieval model is:
 ### 1. Clone the repo / 拉代码
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/lxuan3/project-knowledge
 cd project-knowledge
 ```
 
