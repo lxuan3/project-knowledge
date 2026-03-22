@@ -93,6 +93,18 @@ node bin/project-knowledge lint \
 node bin/project-knowledge index
 ```
 
+### Inspect current config
+
+```bash
+node bin/project-knowledge config get
+```
+
+### Update one config key
+
+```bash
+node bin/project-knowledge config set lancedbUri /path/to/local/project-knowledge/lancedb
+```
+
 ### Create a note
 
 ```bash

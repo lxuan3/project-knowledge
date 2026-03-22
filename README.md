@@ -29,6 +29,7 @@ project-knowledge --help
 - `project-knowledge index`
 - `project-knowledge search`
 - `project-knowledge context-pack`
+- `project-knowledge config`
 - `project-knowledge lint`
 
 ## Default paths
@@ -63,6 +64,27 @@ Config values:
 - `retrievalBackend: "lancedb"`: force LanceDB and fail if it is unavailable
 
 The `index` command continues to write JSON indexes. In `auto` or `lancedb` mode it also writes LanceDB rows.
+
+## Config Commands
+
+Inspect the current effective config:
+
+```bash
+project-knowledge config get
+```
+
+Update one supported key:
+
+```bash
+project-knowledge config set lancedbUri /path/to/local/project-knowledge/lancedb
+```
+
+Allowed keys:
+
+- `vaultRoot`
+- `indexRoot`
+- `retrievalBackend`
+- `lancedbUri`
 
 ## Current status
 

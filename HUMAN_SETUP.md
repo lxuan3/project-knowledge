@@ -91,6 +91,18 @@ Build a context pack:
 project-knowledge context-pack --project openclaw-dashboard --query "skill manager"
 ```
 
+Inspect current config:
+
+```bash
+project-knowledge config get
+```
+
+Update LanceDB path:
+
+```bash
+project-knowledge config set lancedbUri /path/to/local/project-knowledge/lancedb
+```
+
 Write a note:
 
 ```bash

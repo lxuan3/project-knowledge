@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { loadConfig, resolveProjectRoot } from "../src/config/load.mjs";
+import { isAllowedConfigKey, setConfigValue } from "../src/config/manage.mjs";
 import { buildIndexes } from "../src/index/build.mjs";
 import { buildContextPack } from "../src/search/context-pack.mjs";
 import { searchIndex } from "../src/search/search.mjs";
@@ -12,7 +13,7 @@ import { lintProject } from "../src/lint/lint.mjs";
 import { writeProjectNote } from "../src/commands/write.mjs";
 import { listProjects } from "../src/vault/projects.mjs";
 
-const commands = ["write", "index", "list-projects", "search", "context-pack", "serve", "lint"];
+const commands = ["write", "index", "list-projects", "search", "context-pack", "config", "serve", "lint"];
 
 const helpText = [
   "project-knowledge",
@@ -99,6 +100,37 @@ if (arg === "serve") {
   const server = createProjectKnowledgeServer({ config });
   await new Promise((resolve) => server.listen(port, host, resolve));
   process.stdout.write(`Project knowledge server listening on http://${host}:${port}\n`);
+}
+
+if (arg === "config") {
+  const action = process.argv[3];
+
+  if (action === "get") {
+    process.stdout.write(`${JSON.stringify(config, null, 2)}\n`);
+    process.exit(0);
+  }
+
+  if (action === "set") {
+    const key = process.argv[4];
+    const value = process.argv[5];
+
+    if (!key || value == null) {
+      process.stderr.write("config set requires <key> <value>\n");
+      process.exit(1);
+    }
+
+    if (!isAllowedConfigKey(key)) {
+      process.stderr.write(`Unsupported config key: ${key}\n`);
+      process.exit(1);
+    }
+
+    const next = await setConfigValue({ key, value });
+    process.stdout.write(`${JSON.stringify(next, null, 2)}\n`);
+    process.exit(0);
+  }
+
+  process.stderr.write("config requires get or set\n");
+  process.exit(1);
 }
 
 if (arg === "lint") {
