@@ -10,7 +10,7 @@ export async function searchIndex({
   lancedbUri = null,
   lancedbModule = null
 }) {
-  const results = (await retrieveRankedChunks({
+  const retrieval = await retrieveRankedChunks({
     indexRoot,
     query,
     project,
@@ -19,7 +19,9 @@ export async function searchIndex({
     retrievalBackend,
     lancedbUri,
     lancedbModule
-  }))
+  });
+
+  const results = retrieval.chunks
     .map((chunk) => ({
       score: chunk.score,
       project: chunk.project,
@@ -31,5 +33,10 @@ export async function searchIndex({
       updated_at: chunk.updated_at
     }));
 
-  return { query, project, results };
+  return {
+    query,
+    project,
+    retrieval_backend: retrieval.backend,
+    results
+  };
 }

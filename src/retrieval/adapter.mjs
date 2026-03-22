@@ -57,13 +57,26 @@ export async function loadChunks({
   if (shouldTryLanceDb) {
     try {
       const chunks = await readLanceChunks({ lancedbUri, lancedbModule });
-      return filterChunksForScope(chunks, { project, scope });
+      return {
+        chunks: filterChunksForScope(chunks, { project, scope }),
+        backend: "lancedb",
+        fallbackReason: null
+      };
     } catch (error) {
       if (retrievalBackend === "lancedb") throw error;
+      return {
+        chunks: await loadJsonChunks({ indexRoot, project, scope }),
+        backend: "json-fallback",
+        fallbackReason: error
+      };
     }
   }
 
-  return loadJsonChunks({ indexRoot, project, scope });
+  return {
+    chunks: await loadJsonChunks({ indexRoot, project, scope }),
+    backend: "json",
+    fallbackReason: null
+  };
 }
 
 export async function retrieveRankedChunks({
@@ -76,7 +89,7 @@ export async function retrieveRankedChunks({
   lancedbUri = null,
   lancedbModule = null
 }) {
-  const chunks = await loadChunks({
+  const { chunks, backend, fallbackReason } = await loadChunks({
     indexRoot,
     project,
     scope,
@@ -86,7 +99,7 @@ export async function retrieveRankedChunks({
   });
   const terms = tokenizeQuery(query);
 
-  return chunks
+  const ranked = chunks
     .map((chunk) => ({
       ...chunk,
       score: scoreChunk(chunk, terms)
@@ -94,6 +107,12 @@ export async function retrieveRankedChunks({
     .filter((chunk) => chunk.score > 0)
     .sort(sortRanked)
     .slice(0, limit);
+
+  return {
+    chunks: ranked,
+    backend,
+    fallbackReason
+  };
 }
 
 export async function retrieveContextGroups({
@@ -104,7 +123,7 @@ export async function retrieveContextGroups({
   lancedbUri = null,
   lancedbModule = null
 }) {
-  const chunks = await loadChunks({
+  const { chunks, backend, fallbackReason } = await loadChunks({
     indexRoot,
     project,
     scope: "project",
@@ -134,10 +153,14 @@ export async function retrieveContextGroups({
   };
 
   return {
-    overview: firstByType("overview"),
-    architecture: firstByType("architecture"),
-    decisions: topByType("decision", 3),
-    runbooks: topByType("runbook", 3),
-    reference: topByType("reference", 3)
+    backend,
+    fallbackReason,
+    groups: {
+      overview: firstByType("overview"),
+      architecture: firstByType("architecture"),
+      decisions: topByType("decision", 3),
+      runbooks: topByType("runbook", 3),
+      reference: topByType("reference", 3)
+    }
   };
 }

@@ -21,7 +21,7 @@ export async function buildContextPack({
   lancedbUri = null,
   lancedbModule = null
 }) {
-  const groups = await retrieveContextGroups({
+  const retrieval = await retrieveContextGroups({
     indexRoot,
     project,
     query,
@@ -29,10 +29,12 @@ export async function buildContextPack({
     lancedbUri,
     lancedbModule
   });
+  const groups = retrieval.groups;
 
   return {
     project,
     query,
+    retrieval_backend: retrieval.backend,
     generated_at: new Date().toISOString(),
     context: {
       overview: groups.overview.map((chunk) => simplifyChunk(chunk, false)),

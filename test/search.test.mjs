@@ -87,6 +87,7 @@ test("buildIndexes writes project/global indexes and searchIndex returns structu
     query: "repo-first skill manager",
     project: "openclaw-dashboard"
   });
+  assert.equal(projectResults.retrieval_backend, "json");
   assert.equal(projectResults.results.length, 1);
   assert.equal(projectResults.results[0].project, "openclaw-dashboard");
   assert.equal(projectResults.results[0].doc_type, "decision");
@@ -206,6 +207,7 @@ test("buildContextPack returns grouped project context", async () => {
   });
 
   assert.equal(contextPack.project, "openclaw-dashboard");
+  assert.equal(contextPack.retrieval_backend, "json");
   assert.equal(contextPack.context.overview.length, 1);
   assert.equal(contextPack.context.architecture.length, 1);
   assert.equal(contextPack.context.decisions.length, 1);
@@ -264,17 +266,19 @@ test("retrieval adapter returns ranked chunks and grouped context independently 
     project: "openclaw-dashboard",
     query: "skill manager"
   });
-  assert.equal(ranked.length, 1);
-  assert.equal(ranked[0].doc_type, "decision");
-  assert.ok(ranked[0].score > 0);
+  assert.equal(ranked.backend, "json");
+  assert.equal(ranked.chunks.length, 1);
+  assert.equal(ranked.chunks[0].doc_type, "decision");
+  assert.ok(ranked.chunks[0].score > 0);
 
   const groups = await retrieveContextGroups({
     indexRoot,
     project: "openclaw-dashboard",
     query: "skill manager"
   });
-  assert.equal(groups.overview.length, 1);
-  assert.equal(groups.decisions.length, 1);
+  assert.equal(groups.backend, "json");
+  assert.equal(groups.groups.overview.length, 1);
+  assert.equal(groups.groups.decisions.length, 1);
 });
 
 test("buildIndexes writes LanceDB rows and retrieval prefers LanceDB when available", async () => {
@@ -324,8 +328,19 @@ test("buildIndexes writes LanceDB rows and retrieval prefers LanceDB when availa
     lancedbModule: fakeLanceDb
   });
 
-  assert.equal(ranked.length, 1);
-  assert.equal(ranked[0].doc_type, "decision");
+  assert.equal(ranked.backend, "lancedb");
+  assert.equal(ranked.chunks.length, 1);
+  assert.equal(ranked.chunks[0].doc_type, "decision");
+
+  const searchResults = await searchIndex({
+    indexRoot,
+    project: "openclaw-dashboard",
+    query: "skill manager",
+    retrievalBackend: "lancedb",
+    lancedbUri,
+    lancedbModule: fakeLanceDb
+  });
+  assert.equal(searchResults.retrieval_backend, "lancedb");
 });
 
 test("retrieval falls back to JSON when LanceDB is unavailable", async () => {
@@ -364,6 +379,17 @@ test("retrieval falls back to JSON when LanceDB is unavailable", async () => {
     lancedbModule: createFakeLanceDbModule({ failConnect: true })
   });
 
-  assert.equal(ranked.length, 1);
-  assert.equal(ranked[0].doc_type, "decision");
+  assert.equal(ranked.backend, "json-fallback");
+  assert.equal(ranked.chunks.length, 1);
+  assert.equal(ranked.chunks[0].doc_type, "decision");
+
+  const searchResults = await searchIndex({
+    indexRoot,
+    project: "openclaw-dashboard",
+    query: "skill manager",
+    retrievalBackend: "auto",
+    lancedbUri: path.join(root, "missing-lancedb"),
+    lancedbModule: createFakeLanceDbModule({ failConnect: true })
+  });
+  assert.equal(searchResults.retrieval_backend, "json-fallback");
 });
