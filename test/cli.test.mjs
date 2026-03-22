@@ -23,6 +23,20 @@ test("CLI help lists core commands", async () => {
   assert.match(stdout, /config/);
   assert.match(stdout, /serve/);
   assert.match(stdout, /lint/);
+  assert.match(stdout, /print-agent-guidance/);
+});
+
+test("print-agent-guidance outputs standard AGENTS.md snippet", async () => {
+  const { stdout } = await execFileAsync("node", [cliEntry, "print-agent-guidance"], {
+    cwd: repoRoot
+  });
+
+  assert.match(stdout, /### Project Knowledge/);
+  assert.match(stdout, /use `project-knowledge` before assuming history/i);
+  assert.match(stdout, /Do not assume project history before running either `search` or `context-pack`/);
+  assert.match(stdout, /Use `search` for simple, targeted questions/);
+  assert.match(stdout, /Use `context-pack` for complex or unfamiliar tasks/);
+  assert.match(stdout, /Obsidian markdown is the source of truth/);
 });
 
 test("list-projects lists projects from configured vault root", async () => {

@@ -13,7 +13,7 @@ import { lintProject } from "../src/lint/lint.mjs";
 import { writeProjectNote } from "../src/commands/write.mjs";
 import { listProjects } from "../src/vault/projects.mjs";
 
-const commands = ["write", "index", "list-projects", "search", "context-pack", "config", "serve", "lint"];
+const commands = ["write", "index", "list-projects", "search", "context-pack", "config", "serve", "lint", "print-agent-guidance"];
 
 const helpText = [
   "project-knowledge",
@@ -23,6 +23,16 @@ const helpText = [
   "",
   "Commands:",
   ...commands.map((command) => `  ${command}`)
+].join("\n");
+
+const agentGuidanceText = [
+  "### Project Knowledge",
+  "",
+  "- If a task touches an existing project, prior decisions, architecture background, or a runbook, use `project-knowledge` before assuming history.",
+  "- Do not assume project history before running either `search` or `context-pack`.",
+  "- Use `search` for simple, targeted questions.",
+  "- Use `context-pack` for complex or unfamiliar tasks that need broader project context.",
+  "- Obsidian markdown is the source of truth. Do not treat the index as canonical memory."
 ].join("\n");
 
 function readFlag(flagName) {
@@ -55,6 +65,11 @@ async function main() {
     const lancedbUri = readFlag("--lancedb-uri") ?? config.lancedbUri;
     await buildIndexes({ vaultRoot, indexRoot, retrievalBackend, lancedbUri });
     process.stdout.write(`Indexed vault: ${vaultRoot}\n`);
+    return;
+  }
+
+  if (arg === "print-agent-guidance") {
+    process.stdout.write(`${agentGuidanceText}\n`);
     return;
   }
 

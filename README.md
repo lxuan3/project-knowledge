@@ -218,6 +218,7 @@ Core commands:
 - `project-knowledge index`
 - `project-knowledge config`
 - `project-knowledge serve`
+- `project-knowledge print-agent-guidance`
 
 ## Retrieval Model / 检索模型
 
@@ -309,6 +310,20 @@ Supported keys:
 - `remoteBaseUrl`
 - `remotePrimaryUrl`
 - `remoteBackupUrl`
+
+## Agent Guidance / AGENT.md 片段
+
+If you want to add the recommended default workflow rules into an `AGENTS.md`, print the standard snippet with:
+
+如果你想把推荐的默认工作流规则加到 `AGENTS.md` 里，可以直接输出标准片段：
+
+```bash
+project-knowledge print-agent-guidance
+```
+
+This command does not modify files automatically.
+
+这个命令不会自动改文件，只负责输出一段可复制文本。
 
 ## Current Installation Recommendation / 当前安装建议
 

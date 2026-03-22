@@ -159,6 +159,14 @@ project-knowledge write \
   --title "Repo First Sync"
 ```
 
+### Print AGENTS.md guidance
+
+```bash
+project-knowledge print-agent-guidance
+```
+
+Use this when you want a standard snippet to paste into an `AGENTS.md` file instead of editing that file manually from memory.
+
 ## Usage policy
 
 ### When to search
