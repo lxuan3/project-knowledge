@@ -8,6 +8,7 @@ import { buildIndexes } from "../src/index/build.mjs";
 import { retrieveContextGroups, retrieveRankedChunks } from "../src/retrieval/adapter.mjs";
 import { searchIndex } from "../src/search/search.mjs";
 import { buildContextPack } from "../src/search/context-pack.mjs";
+import { createProjectKnowledgeServer } from "../src/server/http.mjs";
 
 async function writeFile(filePath, content) {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
@@ -410,4 +411,87 @@ test("retrieval falls back to JSON when LanceDB is unavailable", async () => {
     lancedbModule: createFakeLanceDbModule({ failConnect: true })
   });
   assert.equal(searchResults.retrieval_backend, "json-fallback");
+});
+
+test("searchIndex and buildContextPack can proxy to a remote project-knowledge server", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "project-knowledge-remote-"));
+  const vaultRoot = path.join(root, "vault");
+  const indexRoot = path.join(root, "index");
+  const projectRoot = path.join(vaultRoot, "openclaw-dashboard");
+
+  await writeFile(
+    path.join(projectRoot, "00-overview.md"),
+    [
+      "---",
+      "project: openclaw-dashboard",
+      "doc_type: overview",
+      "status: active",
+      "updated_at: 2026-03-22",
+      "---",
+      "",
+      "# Overview",
+      "",
+      "## Summary",
+      "",
+      "Dashboard overview."
+    ].join("\n")
+  );
+
+  await writeFile(
+    path.join(projectRoot, "02-decisions", "repo-sync.md"),
+    [
+      "---",
+      "project: openclaw-dashboard",
+      "doc_type: decision",
+      "status: active",
+      "updated_at: 2026-03-22",
+      "aliases: [skill manager]",
+      "---",
+      "",
+      "# Repo Sync",
+      "",
+      "## Decision",
+      "",
+      "Use repo-first sync for skill manager."
+    ].join("\n")
+  );
+
+  await buildIndexes({ vaultRoot, indexRoot });
+
+  const server = createProjectKnowledgeServer({
+    config: {
+      vaultRoot,
+      indexRoot,
+      retrievalBackend: "json",
+      lancedbUri: path.join(root, "lancedb"),
+      remoteBaseUrl: null
+    }
+  });
+
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+
+  try {
+    const address = server.address();
+    const remoteBaseUrl = `http://127.0.0.1:${address.port}`;
+
+    const search = await searchIndex({
+      indexRoot: path.join(root, "missing-index"),
+      query: "skill manager",
+      project: "openclaw-dashboard",
+      remoteBaseUrl
+    });
+    assert.equal(search.retrieval_backend, "json");
+    assert.equal(search.results.length, 1);
+
+    const contextPack = await buildContextPack({
+      indexRoot: path.join(root, "missing-index"),
+      project: "openclaw-dashboard",
+      query: "skill manager",
+      remoteBaseUrl
+    });
+    assert.equal(contextPack.retrieval_backend, "json");
+    assert.equal(contextPack.context.decisions.length, 1);
+  } finally {
+    await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+  }
 });

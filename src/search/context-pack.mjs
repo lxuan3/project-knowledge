@@ -1,4 +1,5 @@
 import { retrieveContextGroups } from "../retrieval/adapter.mjs";
+import { buildRemoteContextPack } from "./remote.mjs";
 
 function simplifyChunk(chunk, includeScore = false) {
   return {
@@ -19,8 +20,13 @@ export async function buildContextPack({
   query = null,
   retrievalBackend = "auto",
   lancedbUri = null,
+  remoteBaseUrl = null,
   lancedbModule = null
 }) {
+  if (remoteBaseUrl) {
+    return buildRemoteContextPack({ remoteBaseUrl, project, query });
+  }
+
   const retrieval = await retrieveContextGroups({
     indexRoot,
     project,

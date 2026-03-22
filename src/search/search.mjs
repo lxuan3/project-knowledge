@@ -1,4 +1,5 @@
 import { retrieveRankedChunks } from "../retrieval/adapter.mjs";
+import { searchRemoteIndex } from "./remote.mjs";
 
 export async function searchIndex({
   indexRoot,
@@ -8,8 +9,13 @@ export async function searchIndex({
   limit = 5,
   retrievalBackend = "auto",
   lancedbUri = null,
+  remoteBaseUrl = null,
   lancedbModule = null
 }) {
+  if (remoteBaseUrl) {
+    return searchRemoteIndex({ remoteBaseUrl, query, project, scope });
+  }
+
   const retrieval = await retrieveRankedChunks({
     indexRoot,
     query,

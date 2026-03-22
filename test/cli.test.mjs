@@ -44,7 +44,8 @@ test("config get prints effective config and config set updates allowed keys", a
       vaultRoot: "/tmp/vault",
       indexRoot: "/tmp/index",
       retrievalBackend: "auto",
-      lancedbUri: "/tmp/lancedb"
+      lancedbUri: "/tmp/lancedb",
+      remoteBaseUrl: null
     }),
     "utf8"
   );
@@ -66,6 +67,10 @@ test("config get prints effective config and config set updates allowed keys", a
     cwd: repoRoot,
     env
   });
+  await execFileAsync("node", [cliEntry, "config", "set", "remoteBaseUrl", "http://192.168.0.148:7357"], {
+    cwd: repoRoot,
+    env
+  });
 
   const { stdout: after } = await execFileAsync("node", [cliEntry, "config", "get"], {
     cwd: repoRoot,
@@ -73,6 +78,7 @@ test("config get prints effective config and config set updates allowed keys", a
   });
   const parsedAfter = JSON.parse(after);
   assert.equal(parsedAfter.lancedbUri, "/tmp/lancedb-next");
+  assert.equal(parsedAfter.remoteBaseUrl, "http://192.168.0.148:7357");
 });
 
 test("search prints a friendly message when indexes have not been built yet", async () => {

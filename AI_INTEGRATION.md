@@ -57,6 +57,12 @@ Retrieval config in the same file:
 
 - `retrievalBackend`: `auto`, `json`, or `lancedb`
 - `lancedbUri`: local LanceDB storage path
+- `remoteBaseUrl`: optional remote `project-knowledge serve` base URL
+
+Important distinction:
+
+- `lancedbUri` is always a local filesystem path
+- `remoteBaseUrl` is the network address to another machine's HTTP query service
 
 ## Expected behavior
 
@@ -116,6 +122,10 @@ project-knowledge config get
 
 ```bash
 project-knowledge config set lancedbUri /path/to/local/project-knowledge/lancedb
+```
+
+```bash
+project-knowledge config set remoteBaseUrl http://192.168.0.148:7357
 ```
 
 ### Create a note
@@ -193,3 +203,5 @@ For first-phase integration:
 - call the CLI from your workflow
 
 Only add MCP or service layers after the CLI workflow is stable.
+
+Reinstalling the skill does not reset `~/.project-knowledge/config.json`; user config persists outside the repo.

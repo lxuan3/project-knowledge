@@ -63,7 +63,8 @@ Example config:
   "vaultRoot": "/path/to/your/default/obsidian/vault",
   "indexRoot": "/path/to/local/project-knowledge/index",
   "retrievalBackend": "auto",
-  "lancedbUri": "/path/to/local/project-knowledge/lancedb"
+  "lancedbUri": "/path/to/local/project-knowledge/lancedb",
+  "remoteBaseUrl": null
 }
 ```
 
@@ -82,8 +83,11 @@ Config values:
 - `retrievalBackend: "auto"`: prefer LanceDB, fall back to JSON
 - `retrievalBackend: "json"`: force the original JSON backend
 - `retrievalBackend: "lancedb"`: force LanceDB and fail if it is unavailable
+- `remoteBaseUrl`: optional remote `project-knowledge serve` base URL, for example `http://192.168.0.148:7357`
 
 The `index` command continues to write JSON indexes. In `auto` or `lancedb` mode it also writes LanceDB rows.
+
+If `remoteBaseUrl` is set, `search` and `context-pack` proxy to the remote HTTP service instead of reading local indexes.
 
 ## Config Commands
 
@@ -99,12 +103,23 @@ Update one supported key:
 project-knowledge config set lancedbUri /path/to/local/project-knowledge/lancedb
 ```
 
+```bash
+project-knowledge config set remoteBaseUrl http://192.168.0.148:7357
+```
+
 Allowed keys:
 
 - `vaultRoot`
 - `indexRoot`
 - `retrievalBackend`
 - `lancedbUri`
+- `remoteBaseUrl`
+
+## Reinstall behavior
+
+Reinstalling the skill does not reset user config.
+
+The config file lives outside the repo in `~/.project-knowledge/config.json` (or `%USERPROFILE%\\.project-knowledge\\config.json` on Windows). Values such as `lancedbUri` and `remoteBaseUrl` only change if you edit that file or run `project-knowledge config set ...`.
 
 ## Current status
 

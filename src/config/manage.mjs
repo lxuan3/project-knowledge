@@ -6,7 +6,8 @@ const ALLOWED_CONFIG_KEYS = new Set([
   "vaultRoot",
   "indexRoot",
   "retrievalBackend",
-  "lancedbUri"
+  "lancedbUri",
+  "remoteBaseUrl"
 ]);
 
 function resolveHomeDir(homeDir = null) {

@@ -25,7 +25,8 @@ Example:
   "vaultRoot": "/path/to/your/default/obsidian/vault",
   "indexRoot": "/path/to/local/project-knowledge/index",
   "retrievalBackend": "auto",
-  "lancedbUri": "/path/to/local/project-knowledge/lancedb"
+  "lancedbUri": "/path/to/local/project-knowledge/lancedb",
+  "remoteBaseUrl": null
 }
 ```
 
@@ -91,6 +92,7 @@ Backend behavior:
 - `retrievalBackend: "auto"`: prefer LanceDB, fall back to JSON
 - `retrievalBackend: "json"`: use only the original JSON backend
 - `retrievalBackend: "lancedb"`: require LanceDB
+- `remoteBaseUrl`: if set, `search` and `context-pack` use the remote HTTP service instead of local indexes
 
 Search:
 
@@ -116,6 +118,14 @@ Update LanceDB path:
 project-knowledge config set lancedbUri /path/to/local/project-knowledge/lancedb
 ```
 
+Set a remote query server:
+
+```bash
+project-knowledge config set remoteBaseUrl http://192.168.0.148:7357
+```
+
+On a secondary machine that only queries another computer's service, `remoteBaseUrl` is the key setting. That machine does not need its own LanceDB install.
+
 Write a note:
 
 ```bash
@@ -139,6 +149,8 @@ project-knowledge index
 ```
 
 If you enable LanceDB, rebuild once so both JSON and LanceDB stay in sync.
+
+Reinstalling the skill does not reset `~/.project-knowledge/config.json`.
 
 ## What not to do
 

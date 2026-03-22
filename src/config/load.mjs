@@ -7,7 +7,8 @@ function defaultConfig(homeDir) {
     vaultRoot: path.join(homeDir, "obsidian", "Openclaw"),
     indexRoot: path.join(homeDir, ".project-knowledge", "index"),
     retrievalBackend: "auto",
-    lancedbUri: path.join(homeDir, ".project-knowledge", "lancedb")
+    lancedbUri: path.join(homeDir, ".project-knowledge", "lancedb"),
+    remoteBaseUrl: null
   };
 }
 

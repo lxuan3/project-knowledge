@@ -72,12 +72,13 @@ async function main() {
     const scope = readFlag("--scope") ?? (project ? "project" : "global");
     const retrievalBackend = readFlag("--retrieval-backend") ?? config.retrievalBackend;
     const lancedbUri = readFlag("--lancedb-uri") ?? config.lancedbUri;
-    if (!indexRoot || !query) {
+    const remoteBaseUrl = readFlag("--remote-base-url") ?? config.remoteBaseUrl;
+    if (!query) {
       process.stderr.write("search requires --index-root and --query\n");
       process.exitCode = 1;
       return;
     }
-    const result = await searchIndex({ indexRoot, query, project, scope, retrievalBackend, lancedbUri });
+    const result = await searchIndex({ indexRoot, query, project, scope, retrievalBackend, lancedbUri, remoteBaseUrl });
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     return;
   }
@@ -88,12 +89,13 @@ async function main() {
     const query = readFlag("--query");
     const retrievalBackend = readFlag("--retrieval-backend") ?? config.retrievalBackend;
     const lancedbUri = readFlag("--lancedb-uri") ?? config.lancedbUri;
+    const remoteBaseUrl = readFlag("--remote-base-url") ?? config.remoteBaseUrl;
     if (!project) {
       process.stderr.write("context-pack requires --project\n");
       process.exitCode = 1;
       return;
     }
-    const result = await buildContextPack({ indexRoot, project, query, retrievalBackend, lancedbUri });
+    const result = await buildContextPack({ indexRoot, project, query, retrievalBackend, lancedbUri, remoteBaseUrl });
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     return;
   }
