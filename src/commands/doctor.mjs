@@ -3,6 +3,7 @@ import path from "node:path";
 
 import { LANCEDB_TABLE_NAME, resolveLanceDbModule } from "../index/lancedb.mjs";
 import { readChunks } from "../index/store.mjs";
+import { resolveProjectRoot } from "../config/load.mjs";
 
 function okCheck(name, details = {}) {
   return { name, status: "ok", ...details };
@@ -159,9 +160,17 @@ export async function runDoctor({ config, project = null, configPath = null }) {
 
   for (const [name, target] of [
     ["vaultRoot", config.vaultRoot],
+    ["projectSpaces", (config.projectSpaces ?? []).join(", ") || null],
     ["indexRoot", config.indexRoot],
     ["lancedbUri", config.lancedbUri]
   ]) {
+    if (name === "projectSpaces") {
+      checks.push(okCheck(name, {
+        target: target ?? "(none)",
+        message: (config.projectSpaces ?? []).length > 0 ? "project spaces configured" : "no project spaces configured"
+      }));
+      continue;
+    }
     const stats = await statPath(target);
     if (!stats) {
       checks.push(name === "vaultRoot"
@@ -214,7 +223,7 @@ export async function runDoctor({ config, project = null, configPath = null }) {
 
   let projectRoot = null;
   if (project) {
-    projectRoot = path.join(config.vaultRoot, project);
+    projectRoot = resolveProjectRoot({ config, project });
     checks.push((await pathExists(projectRoot))
       ? okCheck("projectRoot", { target: projectRoot, message: "project directory exists" })
       : failCheck("projectRoot", { target: projectRoot, message: "project directory does not exist" }));

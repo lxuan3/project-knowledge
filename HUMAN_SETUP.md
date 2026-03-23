@@ -17,13 +17,13 @@ What it does not require:
 What it does require:
 
 - a stable vault root directory
-- one subdirectory per project under that vault root, unless you pass `--project-root`
+- one subdirectory per project under that vault root, or configured project spaces such as `vaultRoot/Openclaw/<project>`, unless you pass `--project-root`
 - markdown notes created with the expected templates or layout
 
 Default assumption:
 
 - `vaultRoot` points to your default project-knowledge vault root
-- each project lives under `vaultRoot/<project>`
+- each project lives under `vaultRoot/<project>` unless `projectSpaces` is configured
 
 Example:
 
@@ -75,7 +75,8 @@ Minimal example:
 
 ```json
 {
-  "vaultRoot": "/path/to/your/obsidian/Openclaw",
+  "vaultRoot": "/path/to/your/obsidian",
+  "projectSpaces": ["Openclaw"],
   "indexRoot": "/path/to/local/project-knowledge/index",
   "retrievalBackend": "auto",
   "lancedbUri": "/path/to/local/project-knowledge/lancedb",
@@ -88,6 +89,7 @@ Minimal example:
 Meaning of each field:
 
 - `vaultRoot`: default source-of-truth vault root
+- `projectSpaces`: optional second-level directories to scan, such as `["Openclaw"]`
 - `indexRoot`: local JSON retrieval cache
 - `retrievalBackend`: `auto`, `json`, or `lancedb`
 - `lancedbUri`: local LanceDB storage directory
@@ -101,6 +103,12 @@ Remote priority:
 2. `remoteBackupUrl`
 3. `remoteBaseUrl`
 4. local fallback
+
+Resolution rule:
+
+1. `vaultRoot/<project>`
+2. each configured `vaultRoot/<space>/<project>`
+3. explicit `--project-root`
 
 ## 4. LanceDB setup
 

@@ -4,6 +4,7 @@ import path from "node:path";
 
 const ALLOWED_CONFIG_KEYS = new Set([
   "vaultRoot",
+  "projectSpaces",
   "indexRoot",
   "retrievalBackend",
   "lancedbUri",

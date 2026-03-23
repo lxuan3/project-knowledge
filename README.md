@@ -72,6 +72,7 @@ What is actually required:
 - You do not need Obsidian running in the background
 - You do need markdown files stored under a vault root
 - You should treat `vaultRoot` as the canonical location for project notes
+- Projects can live directly under `vaultRoot/<project>` or under configured spaces such as `vaultRoot/<space>/<project>`
 
 实际需要的是：
 
@@ -79,6 +80,7 @@ What is actually required:
 - 不需要后台运行 Obsidian
 - 需要一个真实存在的 vault 根目录，里面放 markdown
 - `vaultRoot` 应被视为项目知识真源位置
+- 项目既可以直接位于 `vaultRoot/<project>`，也可以位于配置过的空间目录下，例如 `vaultRoot/<space>/<project>`
 
 Cost if you do not use it:
 
@@ -199,8 +201,8 @@ Use these as the default command map:
 按这个顺序理解常用命令：
 
 - `project-knowledge list-projects`
-  - discover available projects when the slug is unclear
-  - 当项目名不确定时先列项目
+  - discover available projects across the vault root and configured project spaces when the slug is unclear
+  - 当项目名不确定时，先列出 vault root 和已配置 project spaces 下的项目
 - `project-knowledge search --project <project> --query "<query>"`
   - targeted lookup for one concrete question
   - 针对一个明确问题做精确检索
@@ -208,8 +210,8 @@ Use these as the default command map:
   - preload overview, architecture, decisions, and other grouped context
   - 预加载 overview、architecture、decision 等分组上下文
 - `project-knowledge where --project <project> [--doc-type <type>] [--title "<title>"]`
-  - inspect resolved config, project paths, and write destination before writing
-  - 在写入前检查当前配置、项目路径和目标落点
+  - inspect resolved config, project spaces, project paths, and write destination before writing
+  - 在写入前检查当前配置、project spaces、项目路径和目标落点
 - `project-knowledge doctor [--project <project>] [--json]`
   - diagnose config, local retrieval, remote health, and project path problems
   - 诊断配置、本地检索、远端健康状态和项目路径问题

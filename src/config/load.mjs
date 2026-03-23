@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import syncFs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
@@ -13,6 +14,7 @@ export function resolveConfigPath(homeDir = resolveHomeDir()) {
 function defaultConfig(homeDir) {
   return {
     vaultRoot: path.join(homeDir, "obsidian", "Openclaw"),
+    projectSpaces: [],
     indexRoot: path.join(homeDir, ".project-knowledge", "index"),
     retrievalBackend: "auto",
     lancedbUri: path.join(homeDir, ".project-knowledge", "lancedb"),
@@ -41,5 +43,14 @@ export async function loadConfig({ homeDir = resolveHomeDir() } = {}) {
 export function resolveProjectRoot({ config, projectRoot = null, project = null }) {
   if (projectRoot) return projectRoot;
   if (!project) return null;
-  return path.join(config.vaultRoot, project);
+
+  const rootPath = path.join(config.vaultRoot, project);
+  if (syncFs.existsSync(rootPath)) return rootPath;
+
+  for (const space of config.projectSpaces ?? []) {
+    const nestedPath = path.join(config.vaultRoot, space, project);
+    if (syncFs.existsSync(nestedPath)) return nestedPath;
+  }
+
+  return rootPath;
 }

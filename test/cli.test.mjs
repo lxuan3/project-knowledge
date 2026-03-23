@@ -111,6 +111,44 @@ test("list-projects lists projects from configured vault root", async () => {
   assert.match(stdout, /"project": "beta"/);
 });
 
+test("list-projects includes configured project spaces and reports root collisions", async () => {
+  const homeDir = await fs.mkdtemp(path.join(os.tmpdir(), "project-knowledge-cli-project-spaces-"));
+  const vaultRoot = path.join(homeDir, "vault");
+  const configDir = path.join(homeDir, ".project-knowledge");
+
+  await writeFile(path.join(vaultRoot, "alpha", "00-overview.md"), "# Alpha\n");
+  await writeFile(path.join(vaultRoot, "Openclaw", "beta", "00-overview.md"), "# Beta\n");
+  await writeFile(path.join(vaultRoot, "Openclaw", "alpha", "00-overview.md"), "# Alpha Nested\n");
+  await fs.mkdir(configDir, { recursive: true });
+  await fs.writeFile(
+    path.join(configDir, "config.json"),
+    JSON.stringify({
+      vaultRoot,
+      projectSpaces: ["Openclaw"],
+      indexRoot: path.join(homeDir, "index"),
+      retrievalBackend: "auto",
+      lancedbUri: path.join(homeDir, "lancedb"),
+      remoteBaseUrl: null,
+      remotePrimaryUrl: null,
+      remoteBackupUrl: null
+    }),
+    "utf8"
+  );
+
+  const env = { ...process.env, HOME: homeDir, USERPROFILE: homeDir };
+  const { stdout } = await execFileAsync("node", [cliEntry, "list-projects"], {
+    cwd: repoRoot,
+    env
+  });
+
+  const parsed = JSON.parse(stdout);
+  assert.equal(parsed.projects.length, 2);
+  assert.deepEqual(parsed.projects.map((project) => project.project), ["alpha", "beta"]);
+  assert.equal(parsed.projects.find((project) => project.project === "alpha").path, path.join(vaultRoot, "alpha"));
+  assert.equal(parsed.projects.find((project) => project.project === "beta").path, path.join(vaultRoot, "Openclaw", "beta"));
+  assert.match(JSON.stringify(parsed.collisions), /alpha/);
+});
+
 test("config get prints effective config and config set updates allowed keys", async () => {
   const homeDir = await fs.mkdtemp(path.join(os.tmpdir(), "project-knowledge-cli-config-"));
   const configDir = path.join(homeDir, ".project-knowledge");
@@ -158,6 +196,10 @@ test("config get prints effective config and config set updates allowed keys", a
     cwd: repoRoot,
     env
   });
+  await execFileAsync("node", [cliEntry, "config", "set", "projectSpaces", "Openclaw,Archive"], {
+    cwd: repoRoot,
+    env
+  });
 
   const { stdout: after } = await execFileAsync("node", [cliEntry, "config", "get"], {
     cwd: repoRoot,
@@ -168,6 +210,7 @@ test("config get prints effective config and config set updates allowed keys", a
   assert.equal(parsedAfter.remoteBaseUrl, "http://192.168.0.148:7357");
   assert.equal(parsedAfter.remotePrimaryUrl, "http://192.168.0.148:7357");
   assert.equal(parsedAfter.remoteBackupUrl, "http://100.112.159.108:7357");
+  assert.deepEqual(parsedAfter.projectSpaces, ["Openclaw", "Archive"]);
 });
 
 test("search prints a friendly message when indexes have not been built yet", async () => {
@@ -234,13 +277,15 @@ test("write supports --project-type for non-engineering projects", async () => {
 
 test("where prints resolved config and project paths as json", async () => {
   const homeDir = await fs.mkdtemp(path.join(os.tmpdir(), "project-knowledge-cli-where-"));
-  const vaultRoot = path.join(homeDir, "obsidian", "Openclaw");
+  const vaultRoot = path.join(homeDir, "obsidian");
   const configDir = path.join(homeDir, ".project-knowledge");
   await fs.mkdir(configDir, { recursive: true });
+  await fs.mkdir(path.join(vaultRoot, "Openclaw", "openclaw-dashboard"), { recursive: true });
   await fs.writeFile(
     path.join(configDir, "config.json"),
     JSON.stringify({
       vaultRoot,
+      projectSpaces: ["Openclaw"],
       indexRoot: path.join(homeDir, "index"),
       retrievalBackend: "auto",
       lancedbUri: path.join(homeDir, "lancedb"),
@@ -274,7 +319,8 @@ test("where prints resolved config and project paths as json", async () => {
   const parsed = JSON.parse(stdout);
   assert.equal(parsed.configPath, path.join(homeDir, ".project-knowledge", "config.json"));
   assert.equal(parsed.vaultRoot, vaultRoot);
-  assert.equal(parsed.projectRoot, path.join(vaultRoot, "openclaw-dashboard"));
+  assert.deepEqual(parsed.projectSpaces, ["Openclaw"]);
+  assert.equal(parsed.projectRoot, path.join(vaultRoot, "Openclaw", "openclaw-dashboard"));
   assert.equal(parsed.docType, "decision");
   assert.match(parsed.writePath, /openclaw-dashboard[\\/]+02-decisions[\\/]+repo-first-sync\.md$/);
 });

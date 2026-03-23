@@ -45,7 +45,8 @@ Example:
 
 ```json
 {
-  "vaultRoot": "/path/to/your/obsidian/Openclaw",
+  "vaultRoot": "/path/to/your/obsidian",
+  "projectSpaces": ["Openclaw"],
   "indexRoot": "/path/to/local/project-knowledge/index",
   "retrievalBackend": "auto",
   "lancedbUri": "/path/to/local/project-knowledge/lancedb"

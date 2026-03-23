@@ -11,6 +11,7 @@ test("loadConfig returns default Obsidian and local index roots when config file
   const config = await loadConfig({ homeDir });
 
   assert.equal(config.vaultRoot, path.join(homeDir, "obsidian", "Openclaw"));
+  assert.deepEqual(config.projectSpaces, []);
   assert.equal(config.indexRoot, path.join(homeDir, ".project-knowledge", "index"));
   assert.equal(config.retrievalBackend, "auto");
   assert.equal(config.lancedbUri, path.join(homeDir, ".project-knowledge", "lancedb"));
@@ -27,6 +28,7 @@ test("loadConfig merges values from ~/.project-knowledge/config.json", async () 
     path.join(configDir, "config.json"),
     JSON.stringify({
       vaultRoot: "/tmp/custom-vault",
+      projectSpaces: ["Openclaw"],
       indexRoot: "/tmp/custom-index",
       retrievalBackend: "lancedb",
       lancedbUri: "/tmp/custom-lancedb",
@@ -39,6 +41,7 @@ test("loadConfig merges values from ~/.project-knowledge/config.json", async () 
 
   const config = await loadConfig({ homeDir });
   assert.equal(config.vaultRoot, "/tmp/custom-vault");
+  assert.deepEqual(config.projectSpaces, ["Openclaw"]);
   assert.equal(config.indexRoot, "/tmp/custom-index");
   assert.equal(config.retrievalBackend, "lancedb");
   assert.equal(config.lancedbUri, "/tmp/custom-lancedb");
@@ -50,6 +53,7 @@ test("loadConfig merges values from ~/.project-knowledge/config.json", async () 
 test("resolveProjectRoot uses explicit path or derives it from project name", async () => {
   const config = {
     vaultRoot: path.join("C:", "Users", "tester", "obsidian", "Openclaw"),
+    projectSpaces: [],
     indexRoot: path.join("C:", "Users", "tester", ".project-knowledge", "index")
   };
 
@@ -61,4 +65,25 @@ test("resolveProjectRoot uses explicit path or derives it from project name", as
     resolveProjectRoot({ config, projectRoot: path.join("D:", "tmp", "project-root"), project: "openclaw-dashboard" }),
     path.join("D:", "tmp", "project-root")
   );
+});
+
+test("resolveProjectRoot prefers root projects and falls back to configured project spaces", async () => {
+  const homeDir = await fs.mkdtemp(path.join(os.tmpdir(), "project-knowledge-config-spaces-"));
+  const vaultRoot = path.join(homeDir, "obsidian");
+  const rootProject = path.join(vaultRoot, "alpha");
+  const nestedProject = path.join(vaultRoot, "Openclaw", "beta");
+  const duplicateNested = path.join(vaultRoot, "Openclaw", "alpha");
+
+  await fs.mkdir(rootProject, { recursive: true });
+  await fs.mkdir(nestedProject, { recursive: true });
+  await fs.mkdir(duplicateNested, { recursive: true });
+
+  const config = {
+    vaultRoot,
+    projectSpaces: ["Openclaw"],
+    indexRoot: path.join(homeDir, ".project-knowledge", "index")
+  };
+
+  assert.equal(resolveProjectRoot({ config, project: "alpha" }), rootProject);
+  assert.equal(resolveProjectRoot({ config, project: "beta" }), nestedProject);
 });
