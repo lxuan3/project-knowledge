@@ -194,148 +194,74 @@ npm run cli -- --help
 
 ## Core Commands / 核心命令
 
-```bash
-project-knowledge help write
-project-knowledge help doctor
-project-knowledge doctor --project openclaw-dashboard
-project-knowledge where --project openclaw-dashboard
-project-knowledge list-projects
-project-knowledge index
-project-knowledge search --project openclaw-dashboard --query "skill manager"
-project-knowledge context-pack --project openclaw-dashboard --query "skill manager"
-project-knowledge write --project openclaw-dashboard --doc-type decision --title "Repo First Sync"
-project-knowledge lint --project openclaw-dashboard
-project-knowledge config get
-```
+Use these as the default command map:
 
-Use `where` to inspect resolved paths before writing:
+按这个顺序理解常用命令：
 
-```bash
-project-knowledge where \
-  --project openclaw-dashboard \
-  --doc-type decision \
-  --title "Repo First Sync"
-```
+- `project-knowledge list-projects`
+  - discover available projects when the slug is unclear
+  - 当项目名不确定时先列项目
+- `project-knowledge search --project <project> --query "<query>"`
+  - targeted lookup for one concrete question
+  - 针对一个明确问题做精确检索
+- `project-knowledge context-pack --project <project> [--query "<query>"]`
+  - preload overview, architecture, decisions, and other grouped context
+  - 预加载 overview、architecture、decision 等分组上下文
+- `project-knowledge where --project <project> [--doc-type <type>] [--title "<title>"]`
+  - inspect resolved config, project paths, and write destination before writing
+  - 在写入前检查当前配置、项目路径和目标落点
+- `project-knowledge doctor [--project <project>] [--json]`
+  - diagnose config, local retrieval, remote health, and project path problems
+  - 诊断配置、本地检索、远端健康状态和项目路径问题
+- `project-knowledge write --project <project> --doc-type <type> --title "<title>"`
+  - create a formal project-knowledge note from the standard template
+  - 用标准模板创建正式项目知识 note
+- `project-knowledge lint --project <project>`
+  - validate note structure after reorganization or bulk edits
+  - 在重组目录或批量编辑后做结构校验
+- `project-knowledge index`
+  - rebuild retrieval caches after note creation, move, rename, or deletion
+  - 在创建、移动、重命名或删除 note 后重建检索缓存
+- `project-knowledge config get`
+  - inspect the currently effective configuration
+  - 查看当前实际生效的配置
 
-Use `doctor` to actively probe local and remote setup:
+More examples:
 
-```bash
-project-knowledge doctor
-```
-
-```bash
-project-knowledge doctor --project openclaw-dashboard
-```
-
-```bash
-project-knowledge doctor --project openclaw-dashboard --json
-```
+- `project-knowledge help write`
+- `project-knowledge help doctor`
+- `project-knowledge doctor --project openclaw-dashboard --json`
+- `project-knowledge where --project openclaw-dashboard --doc-type decision --title "Repo First Sync"`
 
 ## Classification Guide / 分类指南
 
-Use this guide when deciding where a formal note belongs.
-
-当你在决定一条正式知识应该写到哪里时，用这份规则。
-
-### Step 1: Choose Project Type / 第一步：选择项目类型
-
-Pick the project type based on the primary job of the project:
-
-项目类型先看这个项目的主要职责：
+Formal project knowledge is grouped into three project types:
 
 - `engineering`
-  - software, systems, tooling, automation, architecture, operations
 - `knowledge`
-  - research, analysis, hypothesis building, landscape mapping, insight formation
 - `content`
-  - topic selection, content production, publishing workflow, distribution strategy
+
+正式项目知识分三类：
 
 - `engineering`
-  - 软件、系统、工具、自动化、架构、运维
 - `knowledge`
-  - 研究、分析、假设、认知整理、领域地图
 - `content`
-  - 选题、内容生产、发布流程、分发策略
 
-### Step 2: Choose Doc Type By Responsibility / 第二步：按知识职责选择文档类型
+Classification logic:
 
-Do not classify by writing style. Classify by the job this note should do in the knowledge base.
+- first choose the project type based on the primary job of the project
+- then choose the doc type based on what job the note should do inside the knowledge base
+- this classification should only be applied when the user explicitly wants to record something into project knowledge / 项目知识库
 
-不要按“这篇看起来像什么”分类，要按“它在知识库里承担什么职责”分类。
+分类逻辑：
 
-- `overview`
-  - what this project is, what it covers, and its current state
-- `architecture`
-  - how an engineering system is structured
-- `landscape`
-  - how a knowledge domain is structured
-- `strategy`
-  - high-level direction for a content project
-- `decision`
-  - a conclusion, tradeoff, or explicit why
-- `runbook`
-  - an engineering operating procedure
-- `reference`
-  - stable facts, APIs, conventions, or source material
-- `hypothesis`
-  - a claim that still needs validation
-- `idea`
-  - a possible direction that is not yet committed
-- `experiment`
-  - a test, trial, or validation record
-- `topic`
-  - a content topic or angle
-- `production`
-  - a concrete content production workflow or output plan
+- 先按项目的主要职责选择项目类型
+- 再按这条 note 在知识库中承担的职责选择文档类型
+- 只有当用户明确表示要记录到 project knowledge / 项目知识库 时，才应用这套分类规则
 
-- `overview`
-  - 项目是什么、覆盖什么、当前处于什么状态
-- `architecture`
-  - 工程系统是怎么组成的
-- `landscape`
-  - 知识领域是怎么组成的
-- `strategy`
-  - 内容项目的高层方向
-- `decision`
-  - 一个明确结论、取舍或 why
-- `runbook`
-  - 工程操作流程
-- `reference`
-  - 稳定事实、接口、约定、资料
-- `hypothesis`
-  - 仍待验证的判断
-- `idea`
-  - 尚未承诺执行的方向性想法
-- `experiment`
-  - 试验、验证、试跑记录
-- `topic`
-  - 内容选题或切入角度
-- `production`
-  - 具体的内容生产流程或交付计划
+Detailed classification rules:
 
-### Default Heuristic / 默认判断法
-
-Ask: how will someone look for this note later?
-
-问自己：以后别人会用什么问题来找这条知识？
-
-- “What is this project?” -> `overview`
-- “How is it structured?” -> `architecture` / `landscape` / `strategy`
-- “Why did we choose this?” -> `decision`
-- “How do I operate this?” -> `runbook` / `production`
-- “What facts should stay stable?” -> `reference`
-- “What are we testing?” -> `experiment`
-- “What are we still unsure about?” -> `hypothesis`
-- “What content angle should we pursue?” -> `topic`
-
-- “这项目是什么？” -> `overview`
-- “它是怎么组织的？” -> `architecture` / `landscape` / `strategy`
-- “为什么这么选？” -> `decision`
-- “怎么操作？” -> `runbook` / `production`
-- “哪些事实需要稳定沉淀？” -> `reference`
-- “我们在验证什么？” -> `experiment`
-- “还有哪些判断没定？” -> `hypothesis`
-- “这个内容做什么角度？” -> `topic`
+- [classification-guide.md](/Users/hypernode/Github/project-knowledge/docs/classification-guide.md)
 
 ## Docs / 文档入口
 

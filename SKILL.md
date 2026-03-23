@@ -123,6 +123,10 @@ Before calling `write`, the agent should explicitly state:
 
 This is not a hard approval gate. The default is to continue. But the classification must be visible to the human so they can correct it before or after the note is created if needed.
 
+For the detailed classification rules, see:
+
+- `docs/classification-guide.md`
+
 For non-engineering projects, supported doc types also include:
 
 - `landscape`
