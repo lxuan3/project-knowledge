@@ -2,7 +2,7 @@
   "id": "project-knowledge",
   "name": "项目知识库",
   "description": "Obsidian-backed project knowledge base. Search prior decisions, build task context, and write formal notes through a structured CLI.",
-  "skills": ["./skills/project-knowledge/SKILL.md"],
+  "skills": ["./project-knowledge/SKILL.md"],
   "configSchema": {
     "type": "object",
     "additionalProperties": false,

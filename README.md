@@ -150,6 +150,39 @@ Backend modes:
 
 ## Install / 安装
 
+### Claude Code Plugin（推荐）
+
+通过 Claude Code marketplace 机制安装，无需手动 clone。
+
+在插件集合目录（如 `~/.agents/skills/`）创建 `.claude-plugin/marketplace.json`：
+
+```json
+{
+  "name": "lxuan3",
+  "owner": { "name": "lxuan3" },
+  "plugins": [
+    {
+      "name": "project-knowledge",
+      "source": "./project-knowledge",
+      "description": "Obsidian-backed project knowledge base.",
+      "skills": ["./project-knowledge"]
+    }
+  ]
+}
+```
+
+然后在 Claude Code 中执行：
+
+```
+/plugin marketplace add ~/.agents/skills
+/plugin install project-knowledge@lxuan3
+/reload-plugins
+```
+
+**注意**：`"skills"` 字段是必填的，因为 `.claude-plugin/plugin.json` 中未声明 skills 路径，Claude Code 需要通过 marketplace entry 才能找到 `SKILL.md`。
+
+### 手动安装
+
 ```bash
 git clone https://github.com/lxuan3/project-knowledge
 cd project-knowledge
