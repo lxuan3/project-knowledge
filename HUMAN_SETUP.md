@@ -39,6 +39,8 @@ Example:
 
 ## 2. Install the repo
 
+### Step 1: Clone and install / 克隆并安装
+
 ```bash
 git clone https://github.com/lxuan3/project-knowledge
 cd project-knowledge
@@ -63,6 +65,37 @@ npm run cli -- --help
 ```
 
 If Windows does not expose `project-knowledge.cmd` reliably after `npm link`, use one of the repo-local forms above.
+
+### Step 2: Install the skill / 安装 skill
+
+The skill directory structure differs between Claude Code and Codex.
+
+#### Claude Code
+
+Claude Code reads skills from subdirectories inside its skills directory.
+The skill file is at `project-knowledge/project-knowledge/SKILL.md`.
+
+```bash
+mkdir -p ~/.agents/skills
+ln -s /path/to/project-knowledge ~/.agents/skills/project-knowledge
+```
+
+Result: `~/.agents/skills/project-knowledge/project-knowledge/SKILL.md` ✓
+
+If your Claude Code uses a custom `skillsDirectory` configured in `~/.claude/settings.json`,
+replace `~/.agents/skills` with that path.
+
+#### Codex
+
+Codex reads the skill directly from the root of the linked directory.
+The skill file is at `project-knowledge/SKILL.md`.
+
+```bash
+mkdir -p ~/.codex/skills
+ln -s /path/to/project-knowledge ~/.codex/skills/project-knowledge
+```
+
+Result: `~/.codex/skills/project-knowledge/SKILL.md` ✓
 
 ## 3. Create local config
 

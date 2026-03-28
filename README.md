@@ -150,38 +150,7 @@ Backend modes:
 
 ## Install / 安装
 
-### Claude Code Plugin（推荐）
-
-通过 Claude Code marketplace 机制安装，无需手动 clone。
-
-在插件集合目录（如 `~/.agents/skills/`）创建 `.claude-plugin/marketplace.json`：
-
-```json
-{
-  "name": "lxuan3",
-  "owner": { "name": "lxuan3" },
-  "plugins": [
-    {
-      "name": "project-knowledge",
-      "source": "./project-knowledge",
-      "description": "Obsidian-backed project knowledge base.",
-      "skills": ["./project-knowledge"]
-    }
-  ]
-}
-```
-
-然后在 Claude Code 中执行：
-
-```
-/plugin marketplace add ~/.agents/skills
-/plugin install project-knowledge@lxuan3
-/reload-plugins
-```
-
-**注意**：`"skills"` 字段是必填的，因为 `.claude-plugin/plugin.json` 中未声明 skills 路径，Claude Code 需要通过 marketplace entry 才能找到 `SKILL.md`。
-
-### 手动安装
+### Step 1: Clone and install / 克隆并安装
 
 ```bash
 git clone https://github.com/lxuan3/project-knowledge
@@ -189,42 +158,71 @@ cd project-knowledge
 npm install
 ```
 
-Preferred invocation order:
-
-```bash
-project-knowledge --help
-```
-
-```bash
-node bin/project-knowledge --help
-```
-
-```bash
-npm run cli -- --help
-```
-
-Command-specific help:
-
-```bash
-project-knowledge help write
-```
-
-If you want a global shim:
+Optional global shortcut / 可选全局命令：
 
 ```bash
 npm link
 ```
 
-If Windows does not expose `project-knowledge.cmd` reliably after `npm link`, keep using:
+### Step 2: Install the skill / 安装 skill
+
+The skill directory structure differs between Claude Code and Codex.
+
+Claude Code 和 Codex 对 skill 目录结构的要求不同。
+
+#### Claude Code
+
+Claude Code reads skills from subdirectories inside its skills directory.
+The skill file is at `project-knowledge/project-knowledge/SKILL.md`.
+
+Claude Code 从 skills 目录下的**子目录**中读取 skill。
+skill 文件路径为 `project-knowledge/project-knowledge/SKILL.md`。
 
 ```bash
-node bin/project-knowledge --help
+mkdir -p ~/.agents/skills
+ln -s /path/to/project-knowledge ~/.agents/skills/project-knowledge
 ```
 
-or:
+Result / 结果: `~/.agents/skills/project-knowledge/project-knowledge/SKILL.md` ✓
+
+If your Claude Code uses a custom `skillsDirectory` configured in `~/.claude/settings.json`,
+replace `~/.agents/skills` with that path.
+
+如果你的 Claude Code 在 `~/.claude/settings.json` 里配置了自定义 `skillsDirectory`，
+请用该路径替换 `~/.agents/skills`。
+
+#### Codex
+
+Codex reads the skill directly from the root of the linked directory.
+The skill file is at `project-knowledge/SKILL.md`.
+
+Codex 直接从链接目录的**根目录**读取 skill。
+skill 文件路径为 `project-knowledge/SKILL.md`。
 
 ```bash
+mkdir -p ~/.codex/skills
+ln -s /path/to/project-knowledge ~/.codex/skills/project-knowledge
+```
+
+Result / 结果: `~/.codex/skills/project-knowledge/SKILL.md` ✓
+
+### Invocation / 调用方式
+
+```bash
+# Preferred from repo root / 推荐（repo 内）:
+node bin/project-knowledge --help
+
+# If globally linked / 全局命令（npm link 后）:
+project-knowledge --help
+
+# npm script fallback / npm 脚本 fallback:
 npm run cli -- --help
+```
+
+Command-specific help / 子命令帮助：
+
+```bash
+project-knowledge help write
 ```
 
 ## Core Commands / 核心命令
