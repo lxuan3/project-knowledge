@@ -1,6 +1,7 @@
 ---
 name: project-knowledge
 description: Use when a project uses an Obsidian knowledge base and the agent needs to search prior decisions, build task context, or write formal notes before assuming project history or writing arbitrary markdown.
+compatibility: Requires Node.js 18+. Run `node bin/project-knowledge` from the checked-out repository root.
 ---
 
 # 项目知识库

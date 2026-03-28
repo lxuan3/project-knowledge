@@ -1,0 +1,6 @@
+interface:
+  display_name: "Project Knowledge"
+  short_description: "Search and write structured project knowledge in Obsidian"
+
+policy:
+  allow_implicit_invocation: true
