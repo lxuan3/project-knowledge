@@ -1,0 +1,15 @@
+{
+  "name": "lxuan3",
+  "owner": { "name": "lxuan3" },
+  "plugins": [
+    {
+      "name": "project-knowledge",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/lxuan3/project-knowledge.git"
+      },
+      "description": "Obsidian-backed project knowledge base.",
+      "version": "1.0.0"
+    }
+  ]
+}
