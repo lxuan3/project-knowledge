@@ -28,6 +28,9 @@ async function connectToLanceDb({ lancedbUri, lancedbModule = null }) {
 function asPlainRows(chunks) {
   return chunks.map((chunk) => ({
     ...chunk,
+    doc_type: chunk.doc_type ?? "",
+    status: chunk.status ?? "",
+    updated_at: chunk.updated_at ?? "",
     tags: JSON.stringify(Array.isArray(chunk.tags) ? chunk.tags : []),
     aliases: JSON.stringify(Array.isArray(chunk.aliases) ? chunk.aliases : [])
   }));
