@@ -16,40 +16,24 @@ test("HTTP server exposes health, search, and context-pack endpoints", async () 
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "project-knowledge-server-"));
   const vaultRoot = path.join(root, "vault");
   const indexRoot = path.join(root, "index");
-  const projectRoot = path.join(vaultRoot, "openclaw-dashboard");
 
   await writeFile(
-    path.join(projectRoot, "00-overview.md"),
+    path.join(vaultRoot, "openclaw-dashboard.md"),
     [
       "---",
       "project: openclaw-dashboard",
-      "doc_type: overview",
+      "project_type: engineering",
       "status: active",
       "updated_at: 2026-03-22",
       "---",
       "",
-      "# Overview",
+      "# openclaw-dashboard",
       "",
-      "## Summary",
+      "Dashboard overview.",
       "",
-      "Dashboard overview."
-    ].join("\n")
-  );
-
-  await writeFile(
-    path.join(projectRoot, "02-decisions", "repo-sync.md"),
-    [
-      "---",
-      "project: openclaw-dashboard",
-      "doc_type: decision",
-      "status: active",
-      "updated_at: 2026-03-22",
-      "aliases: [skill manager]",
-      "---",
+      "## Decisions",
       "",
-      "# Repo Sync",
-      "",
-      "## Decision",
+      "### 2026-03-22: Use repo-first sync",
       "",
       "Use repo-first sync for skill manager."
     ].join("\n")
