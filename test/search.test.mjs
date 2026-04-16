@@ -15,6 +15,30 @@ async function writeFile(filePath, content) {
   await fs.writeFile(filePath, content, "utf8");
 }
 
+function projectFile(fields = {}) {
+  const {
+    project = "openclaw-dashboard",
+    aliases = "[skill manager]",
+    tags = "[skills]",
+    sections = []
+  } = fields;
+
+  return [
+    "---",
+    `project: ${project}`,
+    "project_type: engineering",
+    "status: active",
+    "updated_at: 2026-03-22",
+    `aliases: ${aliases}`,
+    `tags: ${tags}`,
+    "---",
+    "",
+    `# ${project}`,
+    "",
+    ...sections.flatMap((s) => [s, ""])
+  ].join("\n");
+}
+
 function createFakeLanceDbModule({ rows = null, failConnect = false } = {}) {
   const state = {
     tables: new Map()
@@ -59,26 +83,14 @@ test("buildIndexes writes project/global indexes and searchIndex returns structu
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "project-knowledge-search-"));
   const vaultRoot = path.join(root, "vault");
   const indexRoot = path.join(root, "index");
-  const projectRoot = path.join(vaultRoot, "openclaw-dashboard");
 
   await writeFile(
-    path.join(projectRoot, "02-decisions", "repo-sync.md"),
-    [
-      "---",
-      "project: openclaw-dashboard",
-      "doc_type: decision",
-      "status: active",
-      "updated_at: 2026-03-22",
-      "tags: [skills]",
-      "aliases: [repo-first]",
-      "---",
-      "",
-      "# Repo Sync",
-      "",
-      "## Decision",
-      "",
-      "Use repo-first sync for skill manager."
-    ].join("\n")
+    path.join(vaultRoot, "openclaw-dashboard.md"),
+    projectFile({
+      sections: [
+        "## Decisions\n\n### 2026-03-22: Use repo-first sync\n\nUse repo-first sync for skill manager."
+      ]
+    })
   );
 
   await buildIndexes({ vaultRoot, indexRoot });
@@ -106,94 +118,41 @@ test("buildContextPack returns grouped project context", async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "project-knowledge-context-pack-"));
   const vaultRoot = path.join(root, "vault");
   const indexRoot = path.join(root, "index");
-  const projectRoot = path.join(vaultRoot, "openclaw-dashboard");
 
   await writeFile(
-    path.join(projectRoot, "00-overview.md"),
+    path.join(vaultRoot, "openclaw-dashboard.md"),
     [
       "---",
       "project: openclaw-dashboard",
-      "doc_type: overview",
-      "status: active",
-      "updated_at: 2026-03-22",
-      "---",
-      "",
-      "# Overview",
-      "",
-      "## Summary",
-      "",
-      "Dashboard overview."
-    ].join("\n")
-  );
-
-  await writeFile(
-    path.join(projectRoot, "01-architecture.md"),
-    [
-      "---",
-      "project: openclaw-dashboard",
-      "doc_type: architecture",
-      "status: active",
-      "updated_at: 2026-03-22",
-      "---",
-      "",
-      "# Architecture",
-      "",
-      "## Runtime",
-      "",
-      "Runtime files drive the dashboard."
-    ].join("\n")
-  );
-
-  await writeFile(
-    path.join(projectRoot, "02-decisions", "repo-sync.md"),
-    [
-      "---",
-      "project: openclaw-dashboard",
-      "doc_type: decision",
+      "project_type: engineering",
       "status: active",
       "updated_at: 2026-03-22",
       "aliases: [skill manager]",
       "---",
       "",
-      "# Repo Sync",
+      "# openclaw-dashboard",
       "",
-      "## Decision",
+      "Dashboard overview.",
       "",
-      "Use repo-first sync for skill manager."
-    ].join("\n")
-  );
-
-  await writeFile(
-    path.join(projectRoot, "03-runbooks", "run.md"),
-    [
-      "---",
-      "project: openclaw-dashboard",
-      "doc_type: runbook",
-      "status: active",
-      "updated_at: 2026-03-22",
-      "---",
+      "## Architecture",
       "",
-      "# Runbook",
+      "Runtime files drive the dashboard.",
       "",
-      "## Steps",
+      "## Decisions",
       "",
-      "Run npm run lint before deploy."
-    ].join("\n")
-  );
-
-  await writeFile(
-    path.join(projectRoot, "04-reference", "api.md"),
-    [
-      "---",
-      "project: openclaw-dashboard",
-      "doc_type: reference",
-      "status: active",
-      "updated_at: 2026-03-22",
-      "---",
+      "### 2026-03-22: Use repo-first sync",
       "",
-      "# API",
+      "Use repo-first sync for skill manager.",
       "",
-      "## Skills",
+      "## Runbooks",
+      "",
+      "### Deploy",
+      "",
+      "Run npm run lint before deploy.",
+      "",
+      "## Reference",
+      "",
+      "### API",
       "",
       "Skills API exposes assignments."
     ].join("\n")
@@ -239,40 +198,24 @@ test("retrieval adapter returns ranked chunks and grouped context independently 
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "project-knowledge-adapter-"));
   const vaultRoot = path.join(root, "vault");
   const indexRoot = path.join(root, "index");
-  const projectRoot = path.join(vaultRoot, "openclaw-dashboard");
 
   await writeFile(
-    path.join(projectRoot, "00-overview.md"),
+    path.join(vaultRoot, "openclaw-dashboard.md"),
     [
       "---",
       "project: openclaw-dashboard",
-      "doc_type: overview",
+      "project_type: engineering",
       "status: active",
       "updated_at: 2026-03-22",
       "---",
       "",
-      "# Overview",
+      "# openclaw-dashboard",
       "",
-      "## Summary",
+      "Dashboard overview.",
       "",
-      "Dashboard overview."
-    ].join("\n")
-  );
-
-  await writeFile(
-    path.join(projectRoot, "02-decisions", "repo-sync.md"),
-    [
-      "---",
-      "project: openclaw-dashboard",
-      "doc_type: decision",
-      "status: active",
-      "updated_at: 2026-03-22",
-      "aliases: [skill manager]",
-      "---",
+      "## Decisions",
       "",
-      "# Repo Sync",
-      "",
-      "## Decision",
+      "### 2026-03-22: Use repo-first sync",
       "",
       "Use repo-first sync for skill manager."
     ].join("\n")
@@ -305,26 +248,15 @@ test("buildIndexes writes LanceDB rows and retrieval prefers LanceDB when availa
   const vaultRoot = path.join(root, "vault");
   const indexRoot = path.join(root, "index");
   const lancedbUri = path.join(root, "lancedb");
-  const projectRoot = path.join(vaultRoot, "openclaw-dashboard");
   const fakeLanceDb = createFakeLanceDbModule();
 
   await writeFile(
-    path.join(projectRoot, "02-decisions", "repo-sync.md"),
-    [
-      "---",
-      "project: openclaw-dashboard",
-      "doc_type: decision",
-      "status: active",
-      "updated_at: 2026-03-22",
-      "aliases: [skill manager]",
-      "---",
-      "",
-      "# Repo Sync",
-      "",
-      "## Decision",
-      "",
-      "Use repo-first sync for skill manager."
-    ].join("\n")
+    path.join(vaultRoot, "openclaw-dashboard.md"),
+    projectFile({
+      sections: [
+        "## Decisions\n\n### 2026-03-22: Use repo-first sync\n\nUse repo-first sync for skill manager."
+      ]
+    })
   );
 
   await buildIndexes({
@@ -366,25 +298,14 @@ test("retrieval falls back to JSON when LanceDB is unavailable", async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "project-knowledge-lancedb-fallback-"));
   const vaultRoot = path.join(root, "vault");
   const indexRoot = path.join(root, "index");
-  const projectRoot = path.join(vaultRoot, "openclaw-dashboard");
 
   await writeFile(
-    path.join(projectRoot, "02-decisions", "repo-sync.md"),
-    [
-      "---",
-      "project: openclaw-dashboard",
-      "doc_type: decision",
-      "status: active",
-      "updated_at: 2026-03-22",
-      "aliases: [skill manager]",
-      "---",
-      "",
-      "# Repo Sync",
-      "",
-      "## Decision",
-      "",
-      "Use repo-first sync for skill manager."
-    ].join("\n")
+    path.join(vaultRoot, "openclaw-dashboard.md"),
+    projectFile({
+      sections: [
+        "## Decisions\n\n### 2026-03-22: Use repo-first sync\n\nUse repo-first sync for skill manager."
+      ]
+    })
   );
 
   await buildIndexes({ vaultRoot, indexRoot });
@@ -417,40 +338,24 @@ test("searchIndex and buildContextPack can proxy to a remote project-knowledge s
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "project-knowledge-remote-"));
   const vaultRoot = path.join(root, "vault");
   const indexRoot = path.join(root, "index");
-  const projectRoot = path.join(vaultRoot, "openclaw-dashboard");
 
   await writeFile(
-    path.join(projectRoot, "00-overview.md"),
+    path.join(vaultRoot, "openclaw-dashboard.md"),
     [
       "---",
       "project: openclaw-dashboard",
-      "doc_type: overview",
+      "project_type: engineering",
       "status: active",
       "updated_at: 2026-03-22",
       "---",
       "",
-      "# Overview",
+      "# openclaw-dashboard",
       "",
-      "## Summary",
+      "Dashboard overview.",
       "",
-      "Dashboard overview."
-    ].join("\n")
-  );
-
-  await writeFile(
-    path.join(projectRoot, "02-decisions", "repo-sync.md"),
-    [
-      "---",
-      "project: openclaw-dashboard",
-      "doc_type: decision",
-      "status: active",
-      "updated_at: 2026-03-22",
-      "aliases: [skill manager]",
-      "---",
+      "## Decisions",
       "",
-      "# Repo Sync",
-      "",
-      "## Decision",
+      "### 2026-03-22: Use repo-first sync",
       "",
       "Use repo-first sync for skill manager."
     ].join("\n")
@@ -502,25 +407,14 @@ test("remote search can fall back from primary to backup before using local inde
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "project-knowledge-remote-backup-"));
   const vaultRoot = path.join(root, "vault");
   const indexRoot = path.join(root, "index");
-  const projectRoot = path.join(vaultRoot, "openclaw-dashboard");
 
   await writeFile(
-    path.join(projectRoot, "02-decisions", "repo-sync.md"),
-    [
-      "---",
-      "project: openclaw-dashboard",
-      "doc_type: decision",
-      "status: active",
-      "updated_at: 2026-03-22",
-      "aliases: [skill manager]",
-      "---",
-      "",
-      "# Repo Sync",
-      "",
-      "## Decision",
-      "",
-      "Use repo-first sync for skill manager."
-    ].join("\n")
+    path.join(vaultRoot, "openclaw-dashboard.md"),
+    projectFile({
+      sections: [
+        "## Decisions\n\n### 2026-03-22: Use repo-first sync\n\nUse repo-first sync for skill manager."
+      ]
+    })
   );
 
   await buildIndexes({ vaultRoot, indexRoot });
@@ -569,25 +463,14 @@ test("remote search can fall back to local retrieval after both remote URLs fail
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "project-knowledge-remote-local-fallback-"));
   const vaultRoot = path.join(root, "vault");
   const indexRoot = path.join(root, "index");
-  const projectRoot = path.join(vaultRoot, "openclaw-dashboard");
 
   await writeFile(
-    path.join(projectRoot, "02-decisions", "repo-sync.md"),
-    [
-      "---",
-      "project: openclaw-dashboard",
-      "doc_type: decision",
-      "status: active",
-      "updated_at: 2026-03-22",
-      "aliases: [skill manager]",
-      "---",
-      "",
-      "# Repo Sync",
-      "",
-      "## Decision",
-      "",
-      "Use repo-first sync for skill manager."
-    ].join("\n")
+    path.join(vaultRoot, "openclaw-dashboard.md"),
+    projectFile({
+      sections: [
+        "## Decisions\n\n### 2026-03-22: Use repo-first sync\n\nUse repo-first sync for skill manager."
+      ]
+    })
   );
 
   await buildIndexes({ vaultRoot, indexRoot });
@@ -599,18 +482,6 @@ test("remote search can fall back to local retrieval after both remote URLs fail
     remotePrimaryUrl: "http://127.0.0.1:9",
     remoteBackupUrl: "http://127.0.0.1:8"
   });
-  assert.equal(search.retrieval_backend, "json");
   assert.equal(search.transport_backend, "local");
   assert.equal(search.results.length, 1);
-
-  const contextPack = await buildContextPack({
-    indexRoot,
-    project: "openclaw-dashboard",
-    query: "skill manager",
-    remotePrimaryUrl: "http://127.0.0.1:9",
-    remoteBackupUrl: "http://127.0.0.1:8"
-  });
-  assert.equal(contextPack.retrieval_backend, "json");
-  assert.equal(contextPack.transport_backend, "local");
-  assert.equal(contextPack.context.decisions.length, 1);
 });

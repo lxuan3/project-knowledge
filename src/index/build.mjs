@@ -1,6 +1,6 @@
 import path from "node:path";
 
-import { discoverProjectDocuments } from "../vault/discover.mjs";
+import { discoverProjectDocument } from "../vault/discover.mjs";
 import { chunkMarkdownDocument } from "../vault/chunk.mjs";
 import { discoverProjectRoots } from "../vault/project-roots.mjs";
 import { writeLanceChunks } from "./lancedb.mjs";
@@ -17,9 +17,9 @@ export async function buildIndexes({
   const { projects } = await discoverProjectRoots(vaultRoot, projectSpaces);
   const globalChunks = [];
 
-  for (const { project, path: projectRoot } of projects) {
-    const documents = await discoverProjectDocuments(projectRoot);
-    const projectChunks = documents.flatMap((document) => chunkMarkdownDocument(document));
+  for (const { project, filePath } of projects) {
+    const document = await discoverProjectDocument(filePath);
+    const projectChunks = chunkMarkdownDocument(document);
     await writeChunks(path.join(indexRoot, "projects", project, "chunks.json"), projectChunks);
     globalChunks.push(...projectChunks);
   }
