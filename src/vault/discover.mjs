@@ -14,7 +14,7 @@ export async function discoverProjectDocument(filePath) {
   return {
     filePath,
     sourceRelpath: path.basename(filePath),
-    project: data.project ?? path.basename(filePath, ".md"),
+    project: data.project ?? null,
     projectType: data.project_type ?? "engineering",
     docType: null,
     status: data.status ?? null,
