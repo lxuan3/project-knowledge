@@ -3,14 +3,14 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { loadConfig, resolveConfigPath, resolveProjectRoot } from "../src/config/load.mjs";
+import { loadConfig, resolveConfigPath, resolveProjectRoot, resolveProjectFile } from "../src/config/load.mjs";
 import { isAllowedConfigKey, setConfigValue } from "../src/config/manage.mjs";
 import { buildIndexes } from "../src/index/build.mjs";
 import { buildContextPack } from "../src/search/context-pack.mjs";
 import { searchIndex } from "../src/search/search.mjs";
 import { createProjectKnowledgeServer } from "../src/server/http.mjs";
 import { lintProject } from "../src/lint/lint.mjs";
-import { resolveWriteTarget, writeProjectNote } from "../src/commands/write.mjs";
+import { writeProjectNote } from "../src/commands/write.mjs";
 import { renderDoctorReport, runDoctor } from "../src/commands/doctor.mjs";
 import { listProjects } from "../src/vault/projects.mjs";
 
@@ -322,15 +322,6 @@ async function main() {
 
   if (arg === "where") {
     const project = readFlag("--project");
-    const projectRoot = resolveProjectRoot({
-      config,
-      projectRoot: readFlag("--project-root"),
-      project
-    });
-    const projectType = readFlag("--project-type") ?? "engineering";
-    const docType = readFlag("--doc-type");
-    const slug = readFlag("--slug");
-    const title = readFlag("--title");
     const payload = {
       configPath: resolveConfigPath(),
       vaultRoot: config.vaultRoot,
@@ -342,21 +333,10 @@ async function main() {
       remotePrimaryUrl: config.remotePrimaryUrl,
       remoteBackupUrl: config.remoteBackupUrl,
       project: project ?? null,
-      projectRoot
     };
 
-    if (project && projectRoot && docType && (slug || title)) {
-      const target = resolveWriteTarget({
-        projectRoot,
-        projectType,
-        docType,
-        slug,
-        title
-      });
-      payload.projectType = projectType;
-      payload.docType = docType;
-      payload.slug = target.effectiveSlug;
-      payload.writePath = target.destination;
+    if (project) {
+      payload.projectFile = resolveProjectFile({ config, project });
     }
 
     process.stdout.write(`${JSON.stringify(payload, null, 2)}\n`);
@@ -480,17 +460,15 @@ async function main() {
   }
 
   if (arg === "lint") {
-    const projectRoot = resolveProjectRoot({
-      config,
-      projectRoot: readFlag("--project-root"),
-      project: readFlag("--project")
-    });
-    if (!projectRoot) {
-      process.stderr.write("lint requires --project-root or --project\n");
+    const project = readFlag("--project");
+    if (!project) {
+      process.stderr.write("lint requires --project\n");
       process.exitCode = 1;
       return;
     }
-    const result = await lintProject(projectRoot);
+    const vaultRoot = readFlag("--vault-root") ?? config.vaultRoot;
+    const filePath = resolveProjectFile({ config: { vaultRoot }, project });
+    const result = await lintProject(filePath);
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     process.exitCode = result.ok ? 0 : 1;
     return;
@@ -498,27 +476,21 @@ async function main() {
 
   if (arg === "write") {
     const project = readFlag("--project");
-    const projectRoot = resolveProjectRoot({
-      config,
-      projectRoot: readFlag("--project-root"),
-      project
-    });
-    const projectType = readFlag("--project-type") ?? "engineering";
-    const docType = readFlag("--doc-type");
-    const slug = readFlag("--slug");
-    const title = readFlag("--title");
-    if (!projectRoot || !project || !docType || (!slug && !title)) {
-      process.stderr.write("write requires --project --doc-type and either --slug or --title, with optional --project-root and --project-type overrides\n");
+    if (!project) {
+      process.stderr.write("write requires --project\n");
       process.exitCode = 1;
       return;
     }
+    const vaultRoot = readFlag("--vault-root") ?? config.vaultRoot;
+    const projectType = readFlag("--project-type") ?? "engineering";
+    const docType = readFlag("--doc-type") ?? "overview";
+    const title = readFlag("--title");
     const createdPath = await writeProjectNote({
       repoRoot,
-      projectRoot,
+      vaultRoot,
       project,
       projectType,
       docType,
-      slug,
       title
     });
     process.stdout.write(`${createdPath}\n`);
