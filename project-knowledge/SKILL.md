@@ -104,39 +104,38 @@ project-knowledge context-pack \
 
 ### 2. Write formal project knowledge
 
-Create formal notes through the CLI so folder placement and frontmatter stay consistent:
+Each project is a single `.md` file at `<vaultRoot>/<project>.md`. All knowledge lives inside that file under `##` section headings.
+
+**Creating a new project file (first time):**
 
 ```bash
 project-knowledge write \
   --project <project> \
-  --project-type <engineering|knowledge|content> \
-  --doc-type <overview|architecture|decision|runbook|reference> \
+  --project-type <engineering|knowledge|content>
+```
+
+**Appending an entry to an existing project file:**
+
+```bash
+project-knowledge write \
+  --project <project> \
+  --doc-type <decision|runbook|reference|hypothesis|idea|experiment|topic|production> \
   --title "<title>"
 ```
 
-The CLI creates the file with standard frontmatter and a template body. Edit the generated file to add actual content.
+The CLI creates the project file with standard frontmatter and section headings, or appends a new dated entry under the matching `##` section.
 
 Before calling `write`, the agent should explicitly state:
 
-- chosen `project-type`
-- chosen `doc-type`
+- chosen `project-type` (only needed when creating a new project file)
+- chosen `doc-type` and section it will append to
 - one-sentence reason for that classification
 
-This is not a hard approval gate. The default is to continue. But the classification must be visible to the human so they can correct it before or after the note is created if needed.
+This is not a hard approval gate. The default is to continue. But the classification must be visible to the human so they can correct it if needed.
 
 For the detailed classification rules, see:
 
 - `docs/classification-guide.md`
-
-For non-engineering projects, supported doc types also include:
-
-- `landscape`
-- `hypothesis`
-- `idea`
-- `experiment`
-- `strategy`
-- `topic`
-- `production`
 
 ### 3. Validate and refresh
 

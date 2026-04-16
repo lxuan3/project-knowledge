@@ -29,12 +29,9 @@ Example:
 
 ```text
 /path/to/vault/
-  openclaw-dashboard/
-    00-overview.md
-    01-architecture.md
-    02-decisions/
-    03-runbooks/
-    04-reference/
+  openclaw-dashboard.md
+  brand-strategy.md
+  project-knowledge-tool.md
 ```
 
 ## 2. Install the repo
@@ -318,18 +315,16 @@ project-knowledge serve --host 127.0.0.1 --port 7357
 
 `write` resolves the target in this order:
 
-1. Use `--project-root` if you pass it
-2. Otherwise use `vaultRoot/<project>`
-3. Then place the note under the doc-type-specific subdirectory
+1. `--doc-type overview` (or omitted): creates `vaultRoot/<project>.md` from the full project template
+2. Any other `--doc-type`: appends a dated entry under the matching `##` section heading in the existing project file
 
 Examples:
 
-- `engineering decision` -> `02-decisions/<slug>.md`
-- `engineering runbook` -> `03-runbooks/<slug>.md`
-- `knowledge hypothesis` -> `02-hypotheses/<slug>.md`
-- `content topic` -> `02-topics/<slug>.md`
+- `project-knowledge write --project openclaw-dashboard` → creates `openclaw-dashboard.md`
+- `project-knowledge write --project openclaw-dashboard --doc-type decision --title "Use LanceDB"` → appends under `## Decisions`
+- `project-knowledge write --project openclaw-dashboard --doc-type runbook --title "Deploy Rollback"` → appends under `## Runbooks`
 
-Use `where` if you want to inspect the exact resolved path without writing the file.
+Use `where --project <name>` to inspect the resolved project file path.
 
 ## 8. Remote usage
 

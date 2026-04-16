@@ -44,61 +44,28 @@ Pick the project type based on the primary job of the project:
 - `content`
   - 选题、内容生产、发布流程、分发策略
 
-## Step 2: Choose Doc Type By Responsibility / 第二步：按知识职责选择文档类型
+## Step 2: Choose which section to append to / 第二步：选择要追加到哪个 section
 
-Do not classify by writing style. Classify by the job this note should do in the knowledge base.
+All content goes into the single project file. Do not create a new file. Choose the `--doc-type` based on what the content should do — the CLI will append it under the matching `##` heading.
 
-不要按“这篇看起来像什么”分类，要按“它在知识库里承担什么职责”分类。
+所有内容写进同一个项目文件。不新建文件。根据内容的职责选择 `--doc-type`，CLI 会把它追加到对应的 `##` 小节下。
 
-- `overview`
-  - what this project is, what it covers, and its current state
-- `architecture`
-  - how an engineering system is structured
-- `landscape`
-  - how a knowledge domain is structured
-- `strategy`
-  - high-level direction for a content project
-- `decision`
-  - a conclusion, tradeoff, or explicit why
-- `runbook`
-  - an engineering operating procedure
-- `reference`
-  - stable facts, APIs, conventions, or source material
-- `hypothesis`
-  - a claim that still needs validation
-- `idea`
-  - a possible direction that is not yet committed
-- `experiment`
-  - a test, trial, or validation record
-- `topic`
-  - a content topic or angle
-- `production`
-  - a concrete content production workflow or output plan
+| `--doc-type` | Section | When to use |
+|---|---|---|
+| `decision` | `## Decisions` | a conclusion, tradeoff, or explicit why / 明确结论、取舍或 why |
+| `runbook` | `## Runbooks` | an engineering operating procedure / 工程操作流程 |
+| `reference` | `## Reference` | stable facts, APIs, conventions / 稳定事实、接口、约定 |
+| `hypothesis` | `## Hypotheses` | a claim that still needs validation / 仍待验证的判断 |
+| `idea` | `## Ideas` | a possible direction not yet committed / 尚未承诺的方向 |
+| `experiment` | `## Experiments` | a test, trial, or validation record / 试验、验证记录 |
+| `topic` | `## Topics` | a content topic or angle / 内容选题或切入角度 |
+| `production` | `## Production` | a content production workflow / 内容生产流程 |
+| `landscape` | `## Landscape` | how a knowledge domain is structured / 知识领域结构 |
+| `strategy` | `## Strategy` | high-level content direction / 内容项目高层方向 |
 
-- `overview`
-  - 项目是什么、覆盖什么、当前处于什么状态
-- `architecture`
-  - 工程系统是怎么组成的
-- `landscape`
-  - 知识领域是怎么组成的
-- `strategy`
-  - 内容项目的高层方向
-- `decision`
-  - 一个明确结论、取舍或 why
-- `runbook`
-  - 工程操作流程
-- `reference`
-  - 稳定事实、接口、约定、资料
-- `hypothesis`
-  - 仍待验证的判断
-- `idea`
-  - 尚未承诺执行的方向性想法
-- `experiment`
-  - 试验、验证、试跑记录
-- `topic`
-  - 内容选题或切入角度
-- `production`
-  - 具体的内容生产流程或交付计划
+Use `--doc-type overview` only when creating a new project file for the first time — this generates the full file with all section headings.
+
+只有初始化一个新项目文件时才用 `--doc-type overview`，它会生成包含所有 section 的完整文件。
 
 ## Default Heuristic / 默认判断法
 
