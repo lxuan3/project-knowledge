@@ -1,26 +1,11 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-async function directoryHasMarkdownFiles(dirPath) {
-  const entries = await fs.readdir(dirPath, { withFileTypes: true });
-  for (const entry of entries) {
-    if (entry.isFile() && entry.name.endsWith(".md")) {
-      return true;
-    }
-    if (entry.isDirectory() && !entry.name.startsWith(".")) {
-      if (await directoryHasMarkdownFiles(path.join(dirPath, entry.name))) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
-async function existingDirectories(dirPath) {
+async function markdownFilesInDir(dirPath) {
   try {
     const entries = await fs.readdir(dirPath, { withFileTypes: true });
     return entries
-      .filter((entry) => entry.isDirectory() && !entry.name.startsWith("."))
+      .filter((entry) => entry.isFile() && entry.name.endsWith(".md") && !entry.name.startsWith("."))
       .map((entry) => path.join(dirPath, entry.name));
   } catch {
     return [];
@@ -30,31 +15,28 @@ async function existingDirectories(dirPath) {
 export async function discoverProjectRoots(vaultRoot, projectSpaces = []) {
   const discovered = new Map();
   const collisions = [];
-  const excludedRootDirs = new Set(projectSpaces ?? []);
 
-  for (const rootPath of [
+  const searchDirs = [
     vaultRoot,
     ...(projectSpaces ?? []).map((space) => path.join(vaultRoot, space))
-  ]) {
-    const candidateDirs = await existingDirectories(rootPath);
-    for (const candidate of candidateDirs) {
-      if (rootPath === vaultRoot && excludedRootDirs.has(path.basename(candidate))) {
-        continue;
-      }
-      if (!(await directoryHasMarkdownFiles(candidate))) continue;
-      const project = path.basename(candidate);
+  ];
+
+  for (const dir of searchDirs) {
+    const files = await markdownFilesInDir(dir);
+    for (const filePath of files) {
+      const project = path.basename(filePath, ".md");
       const existing = discovered.get(project);
       if (existing) {
-        collisions.push({ project, kept: existing, ignored: candidate });
+        collisions.push({ project, kept: existing, ignored: filePath });
         continue;
       }
-      discovered.set(project, candidate);
+      discovered.set(project, filePath);
     }
   }
 
   const projects = [...discovered.entries()]
-    .map(([project, projectRoot]) => ({ project, path: projectRoot }))
-    .sort((left, right) => left.project.localeCompare(right.project));
+    .map(([project, filePath]) => ({ project, filePath }))
+    .sort((a, b) => a.project.localeCompare(b.project));
 
   return { projects, collisions };
 }
