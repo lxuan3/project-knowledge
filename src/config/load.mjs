@@ -54,3 +54,7 @@ export function resolveProjectRoot({ config, projectRoot = null, project = null 
 
   return rootPath;
 }
+
+export function resolveProjectFile({ config, project }) {
+  return path.join(config.vaultRoot, `${project}.md`);
+}
